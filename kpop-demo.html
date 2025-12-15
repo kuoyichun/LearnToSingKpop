@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Pop 韓語沉浸式學習原型</title>
+    <!-- 引入 Google Fonts 確保韓文顯示美觀 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --primary: #ff007f; /* Neon Pink */
+            --secondary: #00e5ff; /* Cyan */
+            --text-main: #ffffff;
+            --text-sub: #bbbbbb;
+            --text-zh: #ffcc00; /* Translation Yellow */
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 佈局：左側影片，右側歌詞 */
+        .container {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 影片區域 */
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: black;
+            padding: 20px;
+        }
+        
+        #player {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16/9;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.2);
+        }
+
+        /* 歌詞區域 */
+        .lyrics-section {
+            background: var(--bg-panel);
+            overflow-y: auto;
+            padding: 20px;
+            border-left: 1px solid #333;
+            position: relative;
+        }
+
+        .lyrics-header {
+            position: sticky;
+            top: 0;
+            background: var(--bg-panel);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary);
+            z-index: 10;
+        }
+
+        /* 三行歌詞樣式 */
+        .lyric-row {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            opacity: 0.4;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .lyric-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+            opacity: 0.8;
+        }
+
+        .lyric-row.active {
+            opacity: 1;
+            background: rgba(255, 0, 127, 0.1);
+            border-left: 3px solid var(--primary);
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .line-hangul {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        /* 可互動的韓字 */
+        .char-interactive {
+            display: inline-block;
+            transition: color 0.2s;
+            padding: 0 2px;
+        }
+
+        .char-interactive:hover {
+            color: var(--secondary);
+            text-shadow: 0 0 10px var(--secondary);
+            cursor: pointer;
+        }
+
+        .line-rom {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            font-family: 'Roboto', sans-serif;
+            margin-bottom: 4px;
+        }
+
+        .line-zh {
+            font-size: 0.95rem;
+            color: var(--text-zh);
+        }
+
+        /* 彈出視窗 (Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #252525;
+            padding: 30px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.4);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            color: #fff;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .big-char {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 10px;
+            display: block;
+            cursor: pointer;
+        }
+        
+        .big-char:active {
+            transform: scale(0.95);
+        }
+
+        .decomposition-grid {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .jamo-card {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            min-width: 60px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .jamo-card:hover {
+            background: #444;
+            border: 1px solid var(--secondary);
+        }
+
+        .jamo-label {
+            display: block;
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .jamo-char {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .instruction {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="video-section">
+        <!-- 這裡嵌入 YouTube Iframe -->
+        <div id="player"></div>
+        <p style="color: #666; margin-top: 10px;">(使用 BTS - Dynamite 作為測試影片)</p>
+    </div>
+
+    <div class="lyrics-section" id="lyrics-container">
+        <div class="lyrics-header">
+            <h2>歌詞同步演示</h2>
+            <p style="font-size: 0.8rem; color: #888;">點擊韓文字母以拆解結構，點擊行以跳轉時間。</p>
+        </div>
+        <!-- 歌詞將由 JS 動態生成 -->
+    </div>
+</div>
+
+<!-- 拆解器 Modal -->
+<div class="modal-overlay" id="deconstructor-modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+        <h3>韓字原子解構</h3>
+        <div class="full-char-display">
+            <span class="big-char" id="modal-char">한</span>
+            <span class="instruction">點擊上方大字聽整字發音</span>
+        </div>
+        <div class="decomposition-grid" id="modal-jamo-grid">
+            <!-- Jamo 卡片將在此生成 -->
+        </div>
+        <p class="instruction" style="margin-top: 20px;">點擊下方部件聽單獨發音</p>
+    </div>
+</div>
+
+<script>
+    // 1. 模擬歌詞數據 (Mock Data)
+    // 為了演示效果，這裡對應 BTS - Dynamite 的前幾句
+    // 實際開發會從後端 API 獲取
+    const lyricsData = [
+        { start: 0, end: 5, text_ko: "準備開始學習...", text_rom: "Ready to learn...", text_zh: "準備開始學習..." },
+        { start: 20.5, end: 23.0, text_ko: "Cos ah ah I’m in the stars tonight", text_rom: "Cos ah ah I’m in the stars tonight", text_zh: "因為今晚我身在繁星之中" },
+        { start: 23.1, end: 27.5, text_ko: "So watch me bring the fire and set the night alight", text_rom: "So watch me bring the fire and set the night alight", text_zh: "看我引燃火花，點亮黑夜" },
+        { start: 27.6, end: 31.0, text_ko: "Shining through the city with a little funk and soul", text_rom: "Shining through the city with a little funk and soul", text_zh: "帶著些許放克與靈魂樂照亮整座城市" },
+        { start: 31.1, end: 35.0, text_ko: "So I’mma light it up like dynamite, woah", text_rom: "So I’mma light it up like dynamite, woah", text_zh: "我要像炸藥一樣將其引爆，哇" },
+        // 增加一些純韓文測試字句
+        { start: 36.0, end: 40.0, text_ko: "안녕하세요 한국어 연습", text_rom: "Annyeonghaseyo hangugeo yeonseup", text_zh: "你好，韓語練習 (測試行)" },
+        { start: 40.1, end: 45.0, text_ko: "한글을 배워봅시다", text_rom: "Hangeul-eul baewobopsida", text_zh: "讓我們來學韓字吧 (測試行)" }
+    ];
+
+    // 2. 韓字邏輯 (Hangul Logic)
+    const INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+    const MEDIALS = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
+    const FINALS = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+
+    function decomposeHangul(char) {
+        const code = char.charCodeAt(0);
+        if (code < 0xAC00 || code > 0xD7A3) return null;
+        
+        const offset = code - 0xAC00;
+        const initialIdx = Math.floor(offset / 588);
+        const medialIdx = Math.floor((offset % 588) / 28);
+        const finalIdx = offset % 28;
+
+        return {
+            char: char,
+            initial: INITIALS[initialIdx],
+            medial: MEDIALS[medialIdx],
+            final: FINALS[finalIdx] !== "" ? FINALS[finalIdx] : null
+        };
+    }
+
+    // 3. YouTube API 初始化
+    var player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '100%',
+            width: '100%',
+            videoId: 'gdZLi9oWNZg', // BTS Dynamite Video ID
+            events: {
+                'onReady': onPlayerReady
+            }
+        });
+    }
+
+    function onPlayerReady(event) {
+        // 啟動同步循環
+        requestAnimationFrame(syncLyrics);
+    }
+
+    // 載入 YouTube API Script
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // 4. UI 渲染與同步邏輯
+    const lyricsContainer = document.getElementById('lyrics-container');
+
+    // 渲染歌詞列表
+    lyricsData.forEach((line, index) => {
+        const row = document.createElement('div');
+        row.className = 'lyric-row';
+        row.id = `line-${index}`;
+        row.onclick = (e) => {
+            // 如果點擊的不是字元本身，則跳轉時間
+            if (!e.target.classList.contains('char-interactive')) {
+                player.seekTo(line.start);
+                player.playVideo();
+            }
+        };
+
+        // 構建第一行：可互動的韓字
+        let hangulHtml = '';
+        for (let char of line.text_ko) {
+            // 判斷是否為韓字
+            if (char.match(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/)) {
+                hangulHtml += `<span class="char-interactive" onclick="openDeconstructor('${char}')">${char}</span>`;
+            } else {
+                hangulHtml += `<span>${char}</span>`;
+            }
+        }
+
+        row.innerHTML = `
+            <div class="line-hangul">${hangulHtml}</div>
+            <div class="line-rom">${line.text_rom}</div>
+            <div class="line-zh">${line.text_zh}</div>
+        `;
+        lyricsContainer.appendChild(row);
+    });
+
+    // 同步循環 (The Beat)
+    function syncLyrics() {
+        if (player && player.getCurrentTime) {
+            const currentTime = player.getCurrentTime();
+            
+            lyricsData.forEach((line, index) => {
+                const el = document.getElementById(`line-${index}`);
+                if (currentTime >= line.start && currentTime < line.end) {
+                    if (!el.classList.contains('active')) {
+                        // 移除其他 active
+                        document.querySelectorAll('.lyric-row.active').forEach(e => e.classList.remove('active'));
+                        el.classList.add('active');
+                        // 自動滾動
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+        }
+        requestAnimationFrame(syncLyrics);
+    }
+
+    // 5. 互動功能 (Modal & Audio)
+    const modal = document.getElementById('deconstructor-modal');
+    
+    // 簡單的 TTS 發音功能 (使用瀏覽器內建 API)
+    function playSound(text) {
+        if (!text) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR'; // 設定為韓語
+        utterance.rate = 0.8;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    window.openDeconstructor = function(char) {
+        const parts = decomposeHangul(char);
+        if (!parts) return;
+
+        document.getElementById('modal-char').innerText = char;
+        document.getElementById('modal-char').onclick = () => playSound(char);
+        
+        const grid = document.getElementById('modal-jamo-grid');
+        grid.innerHTML = ''; // 清空
+
+        // 生成部件卡片
+        const createCard = (label, val) => {
+            if (!val) return '';
+            return `
+                <div class="jamo-card" onclick="playSound('${val}')">
+                    <span class="jamo-label">${label}</span>
+                    <span class="jamo-char">${val}</span>
+                </div>
+            `;
+        };
+
+        grid.innerHTML += createCard('聲母 (Initial)', parts.initial);
+        grid.innerHTML += createCard('韻母 (Medial)', parts.medial);
+        if (parts.final) {
+            grid.innerHTML += createCard('韻尾 (Final)', parts.final);
+        }
+
+        modal.style.display = 'flex';
+    };
+
+    window.closeModal = function() {
+        modal.style.display = 'none';
+    };
+
+    // 點擊遮罩關閉
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+</script>
+
+</body>
+</html>
