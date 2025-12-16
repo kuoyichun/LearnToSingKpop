@@ -1,53 +1,33 @@
 from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
 import json
-
-# 確保引用的是外部庫，而不是本地檔案
-try:
-    from youtube_transcript_api import YouTubeTranscriptApi
-except ImportError:
-    YouTubeTranscriptApi = None
+import sys
+import os
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # 1. 解析 URL 參數
-        query = urlparse(self.path).query
-        params = parse_qs(query)
-        video_id = params.get('videoId', [None])[0]
-
-        # 設定回應標頭 (CORS)
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
-        # 2. 檢查 Video ID
-        if not video_id:
-            response_data = {"error": "Missing videoId parameter"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
-            return
-
-        # 3. 檢查庫是否安裝成功
-        if YouTubeTranscriptApi is None:
-            response_data = {"error": "Library not installed. Check requirements.txt"}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
-            return
-
+        debug_info = {}
+        
+        # 1. 嘗試匯入並檢查來源
         try:
-            # 4. 呼叫 YouTube API
-            # 使用 list 獲取字幕 (優先抓韓文、英文、中文)
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko', 'en', 'zh-Hant'])
+            import youtube_transcript_api
+            debug_info['status'] = "Imported"
+            debug_info['file_location'] = getattr(youtube_transcript_api, '__file__', 'Unknown')
+            debug_info['dir_content'] = dir(youtube_transcript_api)
+        except ImportError as e:
+            debug_info['status'] = "ImportError"
+            debug_info['error'] = str(e)
             
-            # 回傳成功資料
-            self.wfile.write(json.dumps(transcript).encode('utf-8'))
-            
-        except Exception as e:
-            # 5. 捕捉並回傳錯誤 (包含詳細錯誤類型，方便除錯)
-            error_msg = f"{type(e).__name__}: {str(e)}"
-            
-            # 如果是找不到字幕，給予友善提示
-            if "TranscriptsDisabled" in error_msg or "NoTranscriptFound" in error_msg:
-                error_msg = "This video does not have captions/subtitles available."
+        # 2. 列出 api 資料夾底下的所有檔案
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            debug_info['files_in_api_folder'] = os.listdir(current_dir)
+        except Exception:
+            debug_info['files_in_api_folder'] = "Error reading dir"
 
-            response_data = {"error": error_msg}
-            self.wfile.write(json.dumps(response_data).encode('utf-8'))
+        # 回傳診斷報告
+        self.wfile.write(json.dumps(debug_info, indent=2).encode('utf-8'))
