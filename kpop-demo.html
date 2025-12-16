@@ -224,6 +224,15 @@
 
 <div class="container">
     <div class="video-section">
+        <!-- 在 video-section 內部最上方加入 -->
+        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <input type="text" id="yt-url-input" placeholder="貼上 YouTube 網址 (例如 https://youtu.be/...)" 
+                   style="width: 70%; padding: 10px; border-radius: 5px; border: none;">
+            <button onclick="loadUserVideo()" 
+                    style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                載入影片
+            </button>
+        </div>
         <!-- 這裡嵌入 YouTube Iframe -->
         <div id="player"></div>
         <p style="color: #666; margin-top: 10px;">(使用 BTS - Dynamite 作為測試影片)</p>
@@ -384,6 +393,11 @@
     }
 
     window.openDeconstructor = function(char) {
+        // 新增這段：打開教學視窗時，暫停影片
+        if (player && typeof player.pauseVideo === 'function') {
+            player.pauseVideo();
+        }
+        
         const parts = decomposeHangul(char);
         if (!parts) return;
 
@@ -421,6 +435,38 @@
     window.onclick = function(event) {
         if (event.target == modal) {
             closeModal();
+        }
+    }
+
+    // 用於從各種 YouTube 網址格式中提取 Video ID
+    function extractVideoId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // 載入使用者指定的影片
+    function loadUserVideo() {
+        const urlInput = document.getElementById('yt-url-input');
+        const url = urlInput.value.trim();
+        
+        if (!url) {
+            alert("請輸入網址！");
+            return;
+        }
+
+        const videoId = extractVideoId(url);
+        
+        if (videoId) {
+            // 呼叫 YouTube Player API 換影片
+            if (player && player.loadVideoById) {
+                player.loadVideoById(videoId);
+                
+                // UX 優化：告訴使用者目前的歌詞可能不匹配
+                alert("影片已切換！\n注意：由於這是演示版，歌詞仍維持 BTS - Dynamite 的內容。\n(未來我們將在此處實作歌詞匯入功能)");
+            }
+        } else {
+            alert("無法辨識此 YouTube 網址，請確認格式正確。");
         }
     }
 </script>
