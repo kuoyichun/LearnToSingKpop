@@ -264,24 +264,29 @@
 </div>
 
 <script>
-    // 1. 模擬歌詞數據 (Mock Data)
-    // 為了演示效果，這裡對應 BTS - Dynamite 的前幾句
-    // 實際開發會從後端 API 獲取
-    const lyricsData = [
+    // ==========================================
+    // 1. 初始資料與變數設定
+    // ==========================================
+    
+    // 注意：這裡改用 let，因為我們等一下要換掉它
+    let lyricsData = [
         { start: 0, end: 5, text_ko: "準備開始學習...", text_rom: "Ready to learn...", text_zh: "準備開始學習..." },
         { start: 20.5, end: 23.0, text_ko: "Cos ah ah I’m in the stars tonight", text_rom: "Cos ah ah I’m in the stars tonight", text_zh: "因為今晚我身在繁星之中" },
         { start: 23.1, end: 27.5, text_ko: "So watch me bring the fire and set the night alight", text_rom: "So watch me bring the fire and set the night alight", text_zh: "看我引燃火花，點亮黑夜" },
         { start: 27.6, end: 31.0, text_ko: "Shining through the city with a little funk and soul", text_rom: "Shining through the city with a little funk and soul", text_zh: "帶著些許放克與靈魂樂照亮整座城市" },
         { start: 31.1, end: 35.0, text_ko: "So I’mma light it up like dynamite, woah", text_rom: "So I’mma light it up like dynamite, woah", text_zh: "我要像炸藥一樣將其引爆，哇" },
-        // 增加一些純韓文測試字句
         { start: 36.0, end: 40.0, text_ko: "안녕하세요 한국어 연습", text_rom: "Annyeonghaseyo hangugeo yeonseup", text_zh: "你好，韓語練習 (測試行)" },
         { start: 40.1, end: 45.0, text_ko: "한글을 배워봅시다", text_rom: "Hangeul-eul baewobopsida", text_zh: "讓我們來學韓字吧 (測試行)" }
     ];
 
-    // 2. 韓字邏輯 (Hangul Logic)
+    // 韓字邏輯常數
     const INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
     const MEDIALS = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
     const FINALS = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+
+    // ==========================================
+    // 2. 工具函數
+    // ==========================================
 
     function decomposeHangul(char) {
         const code = char.charCodeAt(0);
@@ -300,13 +305,132 @@
         };
     }
 
-    // 3. YouTube API 初始化
+    function extractVideoId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // ==========================================
+    // 3. 核心功能：渲染歌詞 (您問的部分！)
+    // ==========================================
+
+    function renderLyrics() {
+        const lyricsContainer = document.getElementById('lyrics-container');
+        
+        // 步驟 A: 清除舊的歌詞行 (保留 header)
+        const oldRows = lyricsContainer.querySelectorAll('.lyric-row');
+        oldRows.forEach(row => row.remove());
+
+        // 步驟 B: 根據現在的 lyricsData 生成新的 HTML
+        lyricsData.forEach((line, index) => {
+            const row = document.createElement('div');
+            row.className = 'lyric-row';
+            row.id = `line-${index}`;
+            
+            // 點擊行跳轉時間
+            row.onclick = (e) => {
+                if (!e.target.classList.contains('char-interactive')) {
+                    if(player && player.seekTo) {
+                        player.seekTo(line.start);
+                        player.playVideo();
+                    }
+                }
+            };
+
+            // 構建韓字拆解 HTML
+            let hangulHtml = '';
+            // 確保 text_ko 存在，避免報錯
+            const text = line.text_ko || ""; 
+            for (let char of text) {
+                if (char.match(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/)) {
+                    hangulHtml += `<span class="char-interactive" onclick="openDeconstructor('${char}')">${char}</span>`;
+                } else {
+                    hangulHtml += `<span>${char}</span>`;
+                }
+            }
+
+            row.innerHTML = `
+                <div class="line-hangul">${hangulHtml}</div>
+                <div class="line-rom">${line.text_rom || ""}</div>
+                <div class="line-zh">${line.text_zh || ""}</div>
+            `;
+            lyricsContainer.appendChild(row);
+        });
+    }
+
+    // ==========================================
+    // 4. 核心功能：從 Vercel API 載入新影片
+    // ==========================================
+
+    async function loadUserVideo() {
+        const urlInput = document.getElementById('yt-url-input');
+        const url = urlInput.value.trim();
+        
+        if (!url) { alert("請輸入網址！"); return; }
+        const videoId = extractVideoId(url);
+        if (!videoId) { alert("無法辨識 ID"); return; }
+
+        // 換影片
+        if (player && player.loadVideoById) {
+            player.loadVideoById(videoId);
+        }
+
+        // 顯示載入中
+        const lyricsContainer = document.getElementById('lyrics-container');
+        // 暫時插入一個載入提示，但不要刪掉 header
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'lyric-row';
+        loadingDiv.innerHTML = "正在從 YouTube 抓取字幕... 請稍候...";
+        
+        // 先清除舊歌詞
+        const oldRows = lyricsContainer.querySelectorAll('.lyric-row');
+        oldRows.forEach(row => row.remove());
+        lyricsContainer.appendChild(loadingDiv);
+
+        try {
+            // 呼叫 Vercel API (注意：這是相對路徑)
+            const response = await fetch(`/api?videoId=${videoId}`);
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            // 轉換資料格式
+            // YouTube API 回傳: text, start, duration
+            // 我們需要: text_ko, start, end
+            const newLyrics = data.map(item => ({
+                start: item.start,
+                end: item.start + item.duration,
+                text_ko: item.text,
+                text_rom: "", // 自動抓取無法提供羅馬拼音
+                text_zh: ""   // 自動抓取無法提供翻譯
+            }));
+
+            // 更新全域變數
+            lyricsData = newLyrics;
+            
+            // 重新渲染畫面
+            renderLyrics();
+            alert("字幕載入成功！(提示：自動抓取的字幕僅包含原文)");
+
+        } catch (err) {
+            console.error(err);
+            alert(`抓取失敗：${err.message}\n請確認該影片是否有公開的字幕。`);
+            // 失敗了就渲染回原本的空狀態或舊資料
+            renderLyrics();
+        }
+    }
+
+    // ==========================================
+    // 5. YouTube Player 設定與同步
+    // ==========================================
+    
     var player;
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%',
             width: '100%',
-            videoId: 'gdZLi9oWNZg', // BTS Dynamite Video ID
+            videoId: 'gdZLi9oWNZg', // 預設 BTS Dynamite
             events: {
                 'onReady': onPlayerReady
             }
@@ -314,50 +438,16 @@
     }
 
     function onPlayerReady(event) {
-        // 啟動同步循環
+        // 第一次載入時，渲染預設資料
+        renderLyrics();
         requestAnimationFrame(syncLyrics);
     }
 
-    // 載入 YouTube API Script
+    // 載入 API
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-    // 4. UI 渲染與同步邏輯
-    const lyricsContainer = document.getElementById('lyrics-container');
-
-    // 渲染歌詞列表
-    lyricsData.forEach((line, index) => {
-        const row = document.createElement('div');
-        row.className = 'lyric-row';
-        row.id = `line-${index}`;
-        row.onclick = (e) => {
-            // 如果點擊的不是字元本身，則跳轉時間
-            if (!e.target.classList.contains('char-interactive')) {
-                player.seekTo(line.start);
-                player.playVideo();
-            }
-        };
-
-        // 構建第一行：可互動的韓字
-        let hangulHtml = '';
-        for (let char of line.text_ko) {
-            // 判斷是否為韓字
-            if (char.match(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/)) {
-                hangulHtml += `<span class="char-interactive" onclick="openDeconstructor('${char}')">${char}</span>`;
-            } else {
-                hangulHtml += `<span>${char}</span>`;
-            }
-        }
-
-        row.innerHTML = `
-            <div class="line-hangul">${hangulHtml}</div>
-            <div class="line-rom">${line.text_rom}</div>
-            <div class="line-zh">${line.text_zh}</div>
-        `;
-        lyricsContainer.appendChild(row);
-    });
 
     // 同步循環 (The Beat)
     function syncLyrics() {
@@ -366,12 +456,14 @@
             
             lyricsData.forEach((line, index) => {
                 const el = document.getElementById(`line-${index}`);
+                
+                // 防呆：如果 DOM 還沒生成或已經被刪除，就跳過
+                if (!el) return;
+
                 if (currentTime >= line.start && currentTime < line.end) {
                     if (!el.classList.contains('active')) {
-                        // 移除其他 active
                         document.querySelectorAll('.lyric-row.active').forEach(e => e.classList.remove('active'));
                         el.classList.add('active');
-                        // 自動滾動
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 }
@@ -380,24 +472,26 @@
         requestAnimationFrame(syncLyrics);
     }
 
-    // 5. 互動功能 (Modal & Audio)
-    const modal = document.getElementById('deconstructor-modal');
+    // ==========================================
+    // 6. 互動視窗 (Modal)
+    // ==========================================
     
-    // 簡單的 TTS 發音功能 (使用瀏覽器內建 API)
+    const modal = document.getElementById('deconstructor-modal');
+
     function playSound(text) {
         if (!text) return;
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ko-KR'; // 設定為韓語
+        utterance.lang = 'ko-KR';
         utterance.rate = 0.8;
         window.speechSynthesis.speak(utterance);
     }
 
     window.openDeconstructor = function(char) {
-        // 新增這段：打開教學視窗時，暫停影片
+        // 優化：暫停影片
         if (player && typeof player.pauseVideo === 'function') {
             player.pauseVideo();
         }
-        
+
         const parts = decomposeHangul(char);
         if (!parts) return;
 
@@ -405,9 +499,8 @@
         document.getElementById('modal-char').onclick = () => playSound(char);
         
         const grid = document.getElementById('modal-jamo-grid');
-        grid.innerHTML = ''; // 清空
+        grid.innerHTML = '';
 
-        // 生成部件卡片
         const createCard = (label, val) => {
             if (!val) return '';
             return `
@@ -429,44 +522,13 @@
 
     window.closeModal = function() {
         modal.style.display = 'none';
+        // 可選：關閉後自動恢復播放
+        // if (player) player.playVideo(); 
     };
 
-    // 點擊遮罩關閉
     window.onclick = function(event) {
         if (event.target == modal) {
             closeModal();
-        }
-    }
-
-    // 用於從各種 YouTube 網址格式中提取 Video ID
-    function extractVideoId(url) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    }
-
-    // 載入使用者指定的影片
-    function loadUserVideo() {
-        const urlInput = document.getElementById('yt-url-input');
-        const url = urlInput.value.trim();
-        
-        if (!url) {
-            alert("請輸入網址！");
-            return;
-        }
-
-        const videoId = extractVideoId(url);
-        
-        if (videoId) {
-            // 呼叫 YouTube Player API 換影片
-            if (player && player.loadVideoById) {
-                player.loadVideoById(videoId);
-                
-                // UX 優化：告訴使用者目前的歌詞可能不匹配
-                alert("影片已切換！\n注意：由於這是演示版，歌詞仍維持 BTS - Dynamite 的內容。\n(未來我們將在此處實作歌詞匯入功能)");
-            }
-        } else {
-            alert("無法辨識此 YouTube 網址，請確認格式正確。");
         }
     }
 </script>
