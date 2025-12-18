@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Pop 韓語沉浸式學習 (雙核心引擎版)</title>
+    <title>K-Pop 韓語沉浸式學習 (2025 穩定版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root { --bg-dark: #121212; --bg-panel: #1e1e1e; --primary: #ff007f; --secondary: #00e5ff; --text-main: #ffffff; --text-sub: #bbbbbb; --text-zh: #ffcc00; }
@@ -11,31 +11,22 @@
         .container { display: grid; grid-template-columns: 3fr 2fr; width: 100%; height: 100%; }
         .video-section { display: flex; flex-direction: column; justify-content: center; align-items: center; background: black; padding: 20px; }
         .input-area { width: 100%; max-width: 800px; margin-bottom: 15px; display: flex; gap: 10px; }
-        #yt-url-input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #333; color: white; }
+        #yt-url-input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #333; color: white; border: 1px solid var(--primary); }
         button.load-btn { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.load-btn:hover { background: #d6006a; }
         #player { width: 100%; max-width: 800px; aspect-ratio: 16/9; box-shadow: 0 0 20px rgba(255, 0, 127, 0.2); }
         .lyrics-section { background: var(--bg-panel); overflow-y: auto; padding: 20px; border-left: 1px solid #333; position: relative; }
         .lyrics-header { position: sticky; top: 0; background: var(--bg-panel); padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--primary); z-index: 10; }
         .lyric-row { padding: 15px; margin-bottom: 10px; border-radius: 8px; transition: all 0.3s ease; opacity: 0.4; cursor: pointer; border-left: 3px solid transparent; }
-        .lyric-row:hover { background: rgba(255, 255, 255, 0.05); opacity: 0.8; }
-        .lyric-row.active { opacity: 1; background: rgba(255, 0, 127, 0.1); border-left: 3px solid var(--primary); transform: scale(1.02); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .line-hangul { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; letter-spacing: 1px; }
-        .char-interactive { display: inline-block; transition: color 0.2s; padding: 0 2px; }
-        .char-interactive:hover { color: var(--secondary); text-shadow: 0 0 10px var(--secondary); cursor: pointer; }
-        .line-rom { font-size: 0.9rem; color: var(--text-sub); font-family: 'Roboto', sans-serif; margin-bottom: 4px; min-height: 1.2em; }
-        .line-zh { font-size: 0.95rem; color: var(--text-zh); min-height: 1.2em; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
-        .modal-content { background: #252525; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; border: 1px solid var(--primary); box-shadow: 0 0 30px rgba(255, 0, 127, 0.4); position: relative; }
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; color: #fff; background: none; border: none; cursor: pointer; }
-        .big-char { font-size: 4rem; font-weight: bold; color: var(--secondary); margin-bottom: 10px; display: block; cursor: pointer; }
-        .decomposition-grid { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .jamo-card { background: #333; padding: 10px; border-radius: 8px; min-width: 60px; cursor: pointer; transition: background 0.2s; }
-        .jamo-card:hover { background: #444; border: 1px solid var(--secondary); }
-        .jamo-label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 5px; }
-        .jamo-char { font-size: 1.5rem; font-weight: bold; }
-        .instruction { font-size: 0.8rem; color: #666; margin-top: 5px; }
-        @media (max-width: 768px) { .container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .video-section { padding: 10px; } }
+        .lyric-row.active { opacity: 1; background: rgba(255, 0, 127, 0.1); border-left: 3px solid var(--primary); transform: scale(1.02); }
+        .line-hangul { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+        .char-interactive { display: inline-block; padding: 0 2px; }
+        .char-interactive:hover { color: var(--secondary); cursor: pointer; }
+        .line-rom { font-size: 0.9rem; color: var(--text-sub); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #252525; padding: 30px; border-radius: 16px; width: 300px; text-align: center; border: 1px solid var(--primary); }
+        .big-char { font-size: 4rem; color: var(--secondary); display: block; cursor: pointer; }
+        .jamo-card { background: #333; padding: 10px; margin: 5px; border-radius: 8px; cursor: pointer; }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -43,338 +34,192 @@
 <div class="container">
     <div class="video-section">
         <div class="input-area">
-            <!-- 預設換成 NMIXX 這首歌 -->
             <input type="text" id="yt-url-input" placeholder="貼上 YouTube 網址" value="https://www.youtube.com/watch?v=u5Dqj7hU4_c">
-            <button class="load-btn" onclick="loadUserVideo()">載入影片</button>
+            <button class="load-btn" onclick="loadUserVideo()">載入影片與字幕</button>
         </div>
         <div id="player"></div>
     </div>
     <div class="lyrics-section" id="lyrics-container">
         <div class="lyrics-header">
-            <h2>K-Pop 韓語學習</h2>
-            <p style="font-size: 0.8rem; color: #888;">請點擊「載入影片」開始抓取。</p>
+            <h2>韓語沉浸學習</h2>
+            <p id="status-msg">請輸入網址並點擊載入</p>
         </div>
     </div>
 </div>
 
 <div class="modal-overlay" id="deconstructor-modal">
     <div class="modal-content">
-        <button class="close-btn" onclick="closeModal()">&times;</button>
-        <h3>韓字原子解構</h3>
-        <div class="full-char-display">
-            <span class="big-char" id="modal-char">한</span>
-            <span class="instruction">點擊聽發音</span>
-        </div>
-        <div class="decomposition-grid" id="modal-jamo-grid"></div>
+        <button onclick="closeModal()" style="float:right; color:white; background:none; border:none; cursor:pointer;">&times;</button>
+        <h3>字母解構</h3>
+        <span class="big-char" id="modal-char"></span>
+        <div id="modal-jamo-grid" style="display:flex; justify-content:center;"></div>
     </div>
 </div>
 
+<!-- 引入羅馬拼音庫：讓自動抓取的歌詞也能有拼音 -->
+<script src="https://cdn.jsdelivr.net/npm/aromanize@0.1.5/aromanize.min.js"></script>
+
 <script>
-    // 定義多種來源：Piped 和 Invidious
-    const API_PROVIDERS = [
-        { name: "Piped (OT)", url: "https://api.piped.ot.ax", type: "piped" },
-        { name: "Invidious (Tux)", url: "https://inv.tux.pizza", type: "invidious" },
-        { name: "Invidious (Lunar)", url: "https://invidious.lunar.icu", type: "invidious" },
-        { name: "Piped (Kavin)", url: "https://pipedapi.kavin.rocks", type: "piped" },
-        { name: "Piped (Tokhmi)", url: "https://pipedapi.tokhmi.xyz", type: "piped" }
-    ];
-
     let lyricsData = [];
+    let player;
 
-    // ==========================================
-    // 1. 核心邏輯 (Jamo Deconstructor)
-    // ==========================================
-    const INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
-    const MEDIALS = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
-    const FINALS = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
-
-    function extractVideoId(url) {
+    // 1. YouTube 網址解析
+    function getID(url) {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
         const match = url.match(regExp);
         return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    function parseTime(timeString) {
-        if (!timeString) return 0;
-        const parts = timeString.split(':');
-        let seconds = 0;
-        if (parts.length === 3) {
-            seconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
-        } else {
-            seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
-        }
-        return seconds;
-    }
-
-    function parseVTT(vttText) {
-        const items = [];
-        const timeRegex = /(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})/;
-        const lines = vttText.split('\n');
-        let currentStart = null;
-        let currentEnd = null;
-        let currentText = [];
-
-        for (let line of lines) {
-            line = line.trim();
-            if (!line) continue;
-            if (line.includes('WEBVTT') || line.match(/^\d+$/)) continue;
-
-            const match = line.match(timeRegex);
-            if (match) {
-                if (currentStart !== null && currentText.length > 0) {
-                    items.push({
-                        start: parseTime(currentStart),
-                        end: parseTime(currentEnd),
-                        text_ko: currentText.join(' ').replace(/<[^>]*>/g, ''),
-                        text_rom: "",
-                        text_zh: ""
-                    });
-                }
-                currentStart = match[1];
-                currentEnd = match[2];
-                currentText = [];
-            } else {
-                if (currentStart !== null) currentText.push(line);
-            }
-        }
-        if (currentStart !== null && currentText.length > 0) {
-            items.push({
-                start: parseTime(currentStart),
-                end: parseTime(currentEnd),
-                text_ko: currentText.join(' '),
-                text_rom: "",
-                text_zh: ""
-            });
-        }
-        return items;
-    }
-
-    // ==========================================
-    // 2. 雙引擎抓取邏輯 (Dual Engine Fetch)
-    // ==========================================
+    // 2. 核心功能：抓取官方字幕
     async function loadUserVideo() {
-        const urlInput = document.getElementById('yt-url-input');
-        const url = urlInput.value.trim();
-        if (!url) { alert("請輸入網址！"); return; }
-        const videoId = extractVideoId(url);
-        if (!videoId) { alert("無法辨識 ID"); return; }
+        const url = document.getElementById('yt-url-input').value;
+        const videoId = getID(url);
+        if (!videoId) return alert("網址無效");
 
-        if (player && player.loadVideoById) player.loadVideoById(videoId);
-
-        const lyricsContainer = document.getElementById('lyrics-container');
-        const header = lyricsContainer.querySelector('.lyrics-header');
-        lyricsContainer.innerHTML = '';
-        if(header) lyricsContainer.appendChild(header);
+        if (player) player.loadVideoById(videoId);
         
-        const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'loading-msg';
-        loadingMsg.innerHTML = '<div style="padding:20px; text-align:center; color: var(--secondary);">正在啟動雙引擎搜尋字幕...<br>Piped & Invidious</div>';
-        lyricsContainer.appendChild(loadingMsg);
+        const status = document.getElementById('status-msg');
+        status.innerText = "正在連線至 YouTube 字幕庫...";
+        
+        try {
+            // 第一步：獲取字幕清單 (使用 AllOrigins 代理繞過 CORS)
+            const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(listUrl)}`;
+            
+            const res = await fetch(proxyUrl);
+            const proxyData = await res.json();
+            
+            // 解析 XML 字幕清單
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(proxyData.contents, "text/xml");
+            const tracks = xmlDoc.getElementsByTagName("track");
+            
+            if (tracks.length === 0) throw new Error("此影片無 CC 字幕軌");
 
-        let success = false;
-        let errorLog = [];
+            // 尋找韓文 (ko)，找不到則找英文 (en)，再不然找第一個
+            let lang = "ko";
+            let hasKo = Array.from(tracks).some(t => t.getAttribute("lang_code") === "ko");
+            if (!hasKo) lang = tracks[0].getAttribute("lang_code");
 
-        for (const provider of API_PROVIDERS) {
-            try {
-                console.log(`嘗試連線至: ${provider.name} (${provider.url})`);
-                
-                let subtitlesList = [];
-                
-                // --- 分支 A: Piped API 邏輯 ---
-                if (provider.type === "piped") {
-                    const metaResponse = await fetch(`${provider.url}/streams/${videoId}`);
-                    if (!metaResponse.ok) throw new Error(`HTTP ${metaResponse.status}`);
-                    const metaData = await metaResponse.json();
-                    subtitlesList = metaData.subtitles || [];
-                    
-                    if (subtitlesList.length === 0) throw new Error("無字幕資料");
+            status.innerText = `正在抓取 [${lang}] 語言字幕...`;
 
-                    // 挑選字幕 (Piped 格式)
-                    // 策略放寬：優先找韓文(不管是否自動)，找不到找英文，再找不到找第一個
-                    let target = subtitlesList.find(s => s.code === 'ko' && !s.autoGenerated) ||
-                                 subtitlesList.find(s => s.code === 'ko') ||
-                                 subtitlesList.find(s => s.code === 'en') ||
-                                 subtitlesList[0];
-                    
-                    if (target) {
-                        const vttRes = await fetch(target.url);
-                        const vttTxt = await vttRes.text();
-                        const parsed = parseVTT(vttTxt);
-                        if (parsed.length > 0) {
-                            lyricsData = parsed;
-                            success = true;
-                            renderLyrics();
-                            alert(`抓取成功！\n來源：${provider.name}\n語言：${target.name}`);
-                            break;
-                        }
-                    }
-                } 
-                // --- 分支 B: Invidious API 邏輯 ---
-                else if (provider.type === "invidious") {
-                    const metaResponse = await fetch(`${provider.url}/api/v1/videos/${videoId}`);
-                    if (!metaResponse.ok) throw new Error(`HTTP ${metaResponse.status}`);
-                    const metaData = await metaResponse.json();
-                    subtitlesList = metaData.captions || [];
+            // 第二步：下載 XML 字幕內容
+            const subUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}`;
+            const subProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(subUrl)}`;
+            
+            const subRes = await fetch(subProxyUrl);
+            const subProxyData = await subRes.json();
+            const subXml = parser.parseFromString(subProxyData.contents, "text/xml");
+            const textElements = subXml.getElementsByTagName("text");
 
-                    if (subtitlesList.length === 0) throw new Error("無字幕資料");
+            // 第三步：轉換為本 App 格式並自動生成羅馬拼音
+            lyricsData = Array.from(textElements).map(el => {
+                const rawText = el.textContent.replace(/&amp;#39;/g, "'").replace(/&quot;/g, '"');
+                return {
+                    start: parseFloat(el.getAttribute("start")),
+                    end: parseFloat(el.getAttribute("start")) + parseFloat(el.getAttribute("dur") || 2),
+                    text_ko: rawText,
+                    // 使用 aromanize 庫自動生成拼音
+                    text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(rawText) : ""
+                };
+            });
 
-                    // 挑選字幕 (Invidious 格式: label, language_code)
-                    let target = subtitlesList.find(s => s.language_code === 'ko') ||
-                                 subtitlesList.find(s => s.language_code === 'en') ||
-                                 subtitlesList[0];
+            renderLyrics();
+            status.innerText = `載入成功！(語言: ${lang})`;
+            alert("成功抓取官方字幕軌！拼音已自動生成。");
 
-                    if (target) {
-                        // Invidious 回傳的是相對路徑，要補上網域
-                        const fullUrl = `${provider.url}${target.url}`;
-                        const vttRes = await fetch(fullUrl);
-                        const vttTxt = await vttRes.text();
-                        const parsed = parseVTT(vttTxt);
-                        if (parsed.length > 0) {
-                            lyricsData = parsed;
-                            success = true;
-                            renderLyrics();
-                            alert(`抓取成功！\n來源：${provider.name}\n語言：${target.label}`);
-                            break;
-                        }
-                    }
-                }
-
-            } catch (err) {
-                console.warn(`${provider.name} 失敗:`, err);
-                errorLog.push(`${provider.name}: ${err.message}`);
-            }
-        }
-
-        if (!success) {
-            loadingMsg.innerHTML = `<div style="padding:20px; color: #ff5555; text-align: left;">
-                <h3>抓取失敗</h3>
-                <p>嘗試了 ${API_PROVIDERS.length} 個伺服器皆無效。</p>
-                <small>錯誤紀錄：<br>${errorLog.join('<br>')}</small>
-                <p style="margin-top:10px;">可能原因：<br>1. 該影片確實沒有公開的 CC 字幕。<br>2. 該影片有地區限制或版權鎖定。<br>3. 第三方 API 暫時被 YouTube 封鎖。</p>
-            </div>`;
+        } catch (err) {
+            console.error(err);
+            status.innerText = "失敗: " + err.message;
+            alert("抓取失敗：此影片可能封鎖了外部讀取，或無公開字幕。");
         }
     }
 
-    // ==========================================
     // 3. 介面渲染
-    // ==========================================
     function renderLyrics() {
-        const lyricsContainer = document.getElementById('lyrics-container');
-        const oldRows = lyricsContainer.querySelectorAll('.lyric-row, .loading-msg');
-        oldRows.forEach(row => row.remove());
+        const container = document.getElementById('lyrics-container');
+        const rows = container.querySelectorAll('.lyric-row');
+        rows.forEach(r => r.remove());
 
         lyricsData.forEach((line, index) => {
             const row = document.createElement('div');
             row.className = 'lyric-row';
             row.id = `line-${index}`;
-            row.onclick = (e) => {
-                if (!e.target.classList.contains('char-interactive')) {
-                    if(player && player.seekTo) {
-                        player.seekTo(line.start);
-                        player.playVideo();
-                    }
-                }
-            };
+            row.onclick = () => player.seekTo(line.start);
 
             let hangulHtml = '';
-            const text = line.text_ko || ""; 
-            for (let char of text) {
+            for (let char of (line.text_ko || "")) {
                 if (char.match(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/)) {
-                    hangulHtml += `<span class="char-interactive" onclick="openDeconstructor('${char}')">${char}</span>`;
+                    hangulHtml += `<span class="char-interactive" onclick="openDeconstructor(event, '${char}')">${char}</span>`;
                 } else {
-                    hangulHtml += `<span>${char}</span>`;
+                    hangulHtml += char;
                 }
             }
 
             row.innerHTML = `
                 <div class="line-hangul">${hangulHtml}</div>
-                <div class="line-rom">${line.text_rom || ""}</div>
-                <div class="line-zh">${line.text_zh || ""}</div>
+                <div class="line-rom">${line.text_rom}</div>
             `;
-            lyricsContainer.appendChild(row);
+            container.appendChild(row);
         });
     }
 
-    // ==========================================
-    // 4. 韓字解構
-    // ==========================================
-    function decomposeHangul(char) {
-        const code = char.charCodeAt(0);
-        if (code < 0xAC00 || code > 0xD7A3) return null;
-        const offset = code - 0xAC00;
-        const initialIdx = Math.floor(offset / 588);
-        const medialIdx = Math.floor((offset % 588) / 28);
-        const finalIdx = offset % 28;
-        return {
-            char: char,
-            initial: INITIALS[initialIdx],
-            medial: MEDIALS[medialIdx],
-            final: FINALS[finalIdx] !== "" ? FINALS[finalIdx] : null
-        };
-    }
+    // 4. 韓字拆解邏輯
+    function openDeconstructor(e, char) {
+        e.stopPropagation();
+        if (player) player.pauseVideo();
+        
+        const INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
+        const MEDIALS = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
+        const FINALS = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
 
-    const modal = document.getElementById('deconstructor-modal');
-    function playSound(text) {
-        if (!text) return;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ko-KR';
-        utterance.rate = 0.8;
-        window.speechSynthesis.speak(utterance);
-    }
-    window.openDeconstructor = function(char) {
-        if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
-        const parts = decomposeHangul(char);
-        if (!parts) return;
+        const code = char.charCodeAt(0) - 0xAC00;
+        const initial = INITIALS[Math.floor(code / 588)];
+        const medial = MEDIALS[Math.floor((code % 588) / 28)];
+        const final = FINALS[code % 28];
+
         document.getElementById('modal-char').innerText = char;
-        document.getElementById('modal-char').onclick = () => playSound(char);
         const grid = document.getElementById('modal-jamo-grid');
-        grid.innerHTML = '';
-        const createCard = (label, val) => {
-            if (!val) return '';
-            return `<div class="jamo-card" onclick="playSound('${val}')"><span class="jamo-label">${label}</span><span class="jamo-char">${val}</span></div>`;
-        };
-        grid.innerHTML += createCard('聲母', parts.initial);
-        grid.innerHTML += createCard('韻母', parts.medial);
-        if (parts.final) grid.innerHTML += createCard('韻尾', parts.final);
-        modal.style.display = 'flex';
-    };
-    window.closeModal = function() { modal.style.display = 'none'; };
-    window.onclick = function(event) { if (event.target == modal) closeModal(); }
+        grid.innerHTML = `<div class="jamo-card" onclick="speak('${initial}')">${initial}</div>
+                          <div class="jamo-card" onclick="speak('${medial}')">${medial}</div>`;
+        if (final) grid.innerHTML += `<div class="jamo-card" onclick="speak('${final}')">${final}</div>`;
+        
+        document.getElementById('deconstructor-modal').style.display = 'flex';
+    }
 
-    // ==========================================
-    // 5. YouTube Player
-    // ==========================================
-    var player;
+    function closeModal() { document.getElementById('deconstructor-modal').style.display = 'none'; }
+    function speak(t) { 
+        const u = new SpeechSynthesisUtterance(t); 
+        u.lang = 'ko-KR'; 
+        window.speechSynthesis.speak(u); 
+    }
+
+    // 5. YouTube 播放器與同步
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
-            height: '100%',
-            width: '100%',
-            videoId: 'u5Dqj7hU4_c', // NMIXX
-            events: { 'onReady': onPlayerReady }
+            height: '100%', width: '100%', videoId: 'u5Dqj7hU4_c',
+            events: { 'onReady': () => setInterval(sync, 100) }
         });
     }
-    function onPlayerReady(event) { requestAnimationFrame(syncLyrics); }
+
+    function sync() {
+        if (!player || !player.getCurrentTime) return;
+        const time = player.getCurrentTime();
+        lyricsData.forEach((line, i) => {
+            const el = document.getElementById(`line-${i}`);
+            if (time >= line.start && time < line.end) {
+                if (!el.classList.contains('active')) {
+                    document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
+                    el.classList.add('active');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    function syncLyrics() {
-        if (player && player.getCurrentTime) {
-            const currentTime = player.getCurrentTime();
-            lyricsData.forEach((line, index) => {
-                const el = document.getElementById(`line-${index}`);
-                if (!el) return;
-                if (currentTime >= line.start && currentTime < line.end) {
-                    if (!el.classList.contains('active')) {
-                        document.querySelectorAll('.lyric-row.active').forEach(e => e.classList.remove('active'));
-                        el.classList.add('active');
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            });
-        }
-        requestAnimationFrame(syncLyrics);
-    }
+    document.body.appendChild(tag);
 </script>
 </body>
 </html>
