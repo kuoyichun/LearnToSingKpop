@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Pop Hangul Master - 視覺優化版</title>
+    <title>K-Pop Hangul Master - 沈浸式學習</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -19,7 +19,7 @@
         body { background-color: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         .app-wrapper { display: flex; width: 100%; height: 100%; }
 
-        /* 左側：設定與影片 (加大寬度至 480px) */
+        /* 左側側邊欄 */
         .sidebar { 
             width: 480px; 
             background: var(--panel); 
@@ -34,13 +34,24 @@
 
         .sidebar h1 { font-size: 1.2rem; color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
 
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; position: relative; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; }
         label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* 教學按鈕樣式 */
+        .btn-tutorial { 
+            background: none; border: 1px solid var(--secondary); color: var(--secondary);
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-tutorial:hover { background: var(--secondary); color: #000; }
+
         input, textarea { 
             background: #222; border: 1px solid #333; border-radius: 6px; 
             color: white; padding: 10px; font-size: 0.85rem; 
         }
-        textarea { height: 150px; resize: none; font-family: monospace; }
+        textarea { height: 150px; resize: none; font-family: monospace; border: 1px dashed #444; }
+        textarea:focus { border-color: var(--primary); outline: none; }
 
         .btn-load { 
             background: var(--primary); color: white; border: none; 
@@ -49,96 +60,43 @@
         }
         .btn-load:hover { background: #ff3399; }
 
-        /* 影片區域 - 尺寸加大 */
-        #video-container { 
-            width: 100%; 
-            aspect-ratio: 16/9; 
-            background: #000; 
-            border-radius: 8px; 
-            margin-top: auto; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            overflow: hidden;
-        }
+        #video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; margin-top: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; }
 
-        /* 右側：歌詞主視窗 */
-        .main-content { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            background: var(--bg);
-            padding: 40px;
-            overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-
-        .lyrics-list { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            width: 100%; 
-            padding-bottom: 300px; 
-        }
-
-        .lyric-row { 
-            padding: 20px; 
-            margin-bottom: 10px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            transition: all 0.4s ease;
-            opacity: 0.15;
-            border: 1px solid transparent;
-        }
-
-        .lyric-row:hover { opacity: 0.6; background: rgba(255,255,255,0.02); }
-
-        .lyric-row.active { 
-            opacity: 1; 
-            background: var(--active-bg); 
-            border-color: var(--secondary);
-            transform: scale(1.02);
-        }
-
-        /* 韓文歌詞字體適度縮小 */
-        .line-ko { 
-            font-size: 1.8rem; 
-            font-weight: 700; 
-            margin-bottom: 8px; 
-            color: #fff;
-            letter-spacing: 1.5px;
-        }
-
-        .line-rom { 
-            font-size: 1rem; 
-            color: var(--secondary); 
-            font-family: 'Roboto', sans-serif;
-            opacity: 0.8;
-        }
-
+        /* 右側歌詞區 */
+        .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
+        .lyrics-list { max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 300px; }
+        .lyric-row { padding: 20px; margin-bottom: 10px; border-radius: 12px; cursor: pointer; transition: 0.3s; opacity: 0.15; border: 1px solid transparent; }
+        .lyric-row.active { opacity: 1; background: var(--active-bg); border-color: var(--secondary); transform: scale(1.02); }
+        .line-ko { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; letter-spacing: 1.5px; }
+        .line-rom { font-size: 1rem; color: var(--secondary); font-family: 'Roboto', sans-serif; opacity: 0.8; }
         .char-interactive { display: inline-block; padding: 0 3px; transition: 0.2s; }
         .char-interactive:hover { color: var(--primary); transform: translateY(-3px); }
 
-        /* 解構 Modal 優化：加入拼音協助 */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(15px); }
-        .modal-content { background: #1a1a1a; padding: 40px; border-radius: 30px; border: 1px solid var(--secondary); text-align: center; width: 480px; position: relative; }
+        /* 通用彈窗樣式 (Modal) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(15px); }
+        .modal-content { background: #1a1a1a; padding: 35px; border-radius: 30px; border: 1px solid var(--secondary); position: relative; }
         
-        .big-char-box { margin-bottom: 30px; }
+        /* 教學彈窗特定樣式 */
+        .tutorial-content { width: 550px; text-align: left; }
+        .tutorial-content h2 { color: var(--secondary); margin-top: 0; }
+        .step-list { list-style: none; padding: 0; }
+        .step-list li { margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; line-height: 1.5; }
+        .step-num { background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; font-weight: bold; }
+        .highlight-text { color: var(--primary); font-weight: bold; }
+
+        /* 解構彈窗特定樣式 */
+        .deconstructor-content { width: 480px; text-align: center; }
         .big-char { font-size: 8rem; color: white; display: block; cursor: pointer; line-height: 1; }
         .big-char-rom { font-size: 1.5rem; color: var(--primary); font-weight: bold; margin-top: 10px; display: block; text-transform: uppercase; }
-
         .jamo-grid { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .jamo-card { background: #252525; padding: 20px; border-radius: 15px; min-width: 90px; cursor: pointer; border: 1px solid #333; transition: 0.2s; }
-        .jamo-card:hover { border-color: var(--primary); background: #333; }
-        .jamo-val { font-size: 2.5rem; font-weight: bold; color: var(--secondary); display: block; line-height: 1.2; }
-        .jamo-rom { color: #aaa; font-size: 0.9rem; font-family: 'Roboto', sans-serif; display: block; margin-top: 5px; font-weight: 500; }
-        .jamo-label { color: #555; font-size: 0.7rem; margin-top: 5px; display: block; text-transform: uppercase; }
+        .jamo-val { font-size: 2.5rem; font-weight: bold; color: var(--secondary); display: block; }
+        .jamo-rom { color: #aaa; font-size: 0.9rem; display: block; margin-top: 5px; }
 
-        .close-modal-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: #666; font-size: 2rem; cursor: pointer; }
-        .close-modal-btn:hover { color: white; }
+        .close-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: #666; font-size: 2rem; cursor: pointer; }
+        .close-btn:hover { color: white; }
 
-        @media (max-width: 1000px) {
-            body { flex-direction: column; overflow-y: auto; }
-            .sidebar { width: 100%; height: auto; }
-            .main-content { height: 60vh; }
-        }
+        @media (max-width: 1000px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width: 100%; } }
     </style>
 </head>
 <body>
@@ -153,8 +111,11 @@
         </div>
 
         <div class="input-group">
-            <label>Paste Transcript (YouTube format)</label>
-            <textarea id="transcript-input" placeholder="Example:&#10;0:17&#10;시커먼 내 세상은 Blue..."></textarea>
+            <div class="label-row">
+                <label>Paste Transcript</label>
+                <button class="btn-tutorial" onclick="toggleModal('tutorial-modal', true)">ⓘ 如何取得轉錄稿？</button>
+            </div>
+            <textarea id="transcript-input" placeholder="YouTube Format:&#10;0:17&#10;시커먼 내 세상은 Blue..."></textarea>
         </div>
 
         <button class="btn-load" onclick="loadEverything()">START LEARNING</button>
@@ -164,7 +125,7 @@
         </div>
     </aside>
 
-    <main class="main-content" id="main-scroll">
+    <main class="main-content">
         <div class="lyrics-list" id="lyrics-list">
             <div style="text-align: center; margin-top: 15vh; color: #333;">
                 <h2 style="font-size: 2rem;">Ready to Sing?</h2>
@@ -174,18 +135,46 @@
     </main>
 </div>
 
-<!-- Modal -->
-<div class="modal" id="modal">
-    <div class="modal-content">
-        <button class="close-modal-btn" onclick="closeModal()">&times;</button>
-        
-        <div class="big-char-box" onclick="speak(document.getElementById('modal-char').innerText)">
+<!-- 教學說明 Modal -->
+<div class="modal-overlay" id="tutorial-modal">
+    <div class="modal-content tutorial-content">
+        <button class="close-btn" onclick="toggleModal('tutorial-modal', false)">&times;</button>
+        <h2>如何獲取 YouTube 轉錄稿？</h2>
+        <ul class="step-list">
+            <li>
+                <span class="step-num">1</span>
+                <div>在 YouTube 影片下方介紹欄點選 <span class="highlight-text">「更多內容」</span> 並往下滑。</div>
+            </li>
+            <li>
+                <span class="step-num">2</span>
+                <div>找到並點擊 <span class="highlight-text">「顯示轉錄稿」</span> 按鈕。</div>
+            </li>
+            <li>
+                <span class="step-num">3</span>
+                <div>影片右方會出現字幕紀錄面板，點擊底部的 <span class="highlight-text">語言選單</span>。</div>
+            </li>
+            <li>
+                <span class="step-num">4</span>
+                <div>將語言切換為 <span class="highlight-text">「韓文」</span> (Korean)。</div>
+            </li>
+            <li>
+                <span class="step-num">5</span>
+                <div>選取並 <span class="highlight-text">複製</span> 所有時間與歌詞文字，貼回到本工具的輸入框中。</div>
+            </li>
+        </ul>
+        <button class="btn-load" style="width:100%" onclick="toggleModal('tutorial-modal', false)">我明白了</button>
+    </div>
+</div>
+
+<!-- 原子解構 Modal -->
+<div class="modal-overlay" id="deconstructor-modal">
+    <div class="modal-content deconstructor-content">
+        <button class="close-btn" onclick="toggleModal('deconstructor-modal', false)">&times;</button>
+        <div onclick="speak(document.getElementById('modal-char').innerText)">
             <span class="big-char" id="modal-char"></span>
             <span class="big-char-rom" id="modal-char-rom"></span>
         </div>
-
         <div class="jamo-grid" id="modal-jamo-grid"></div>
-        
         <p style="color:#444; margin-top:30px; font-size: 0.85rem;">Click any part to hear the sound.</p>
     </div>
 </div>
@@ -196,20 +185,16 @@
     let player;
     let lyricsData = [];
 
-    // 拼音對照表 (用於拆解後的單音節輔助)
     const JAMO_PHONETICS = {
-        // Initials
         "ㄱ": "g", "ㄲ": "kk", "ㄴ": "n", "ㄷ": "d", "ㄸ": "tt", "ㄹ": "r/l", "ㅁ": "m", "ㅂ": "b", "ㅃ": "pp", "ㅅ": "s", "ㅆ": "ss", "ㅇ": "-", "ㅈ": "j", "ㅉ": "jj", "ㅊ": "ch", "ㅋ": "k", "ㅌ": "t", "ㅍ": "p", "ㅎ": "h",
-        // Medials (Vowels)
         "ㅏ": "a", "ㅐ": "ae", "ㅑ": "ya", "ㅒ": "yae", "ㅓ": "eo", "ㅔ": "e", "ㅕ": "yeo", "ㅖ": "ye", "ㅗ": "o", "ㅘ": "wa", "ㅙ": "wae", "ㅚ": "oe", "ㅛ": "yo", "ㅜ": "u", "ㅝ": "wo", "ㅞ": "we", "ㅟ": "wi", "ㅠ": "yu", "ㅡ": "eu", "ㅢ": "ui", "ㅣ": "i",
-        // Finals
-        "ᆨ": "k", "ᆫ": "n", "ᆯ": "l", "ᆷ": "m", "ᆸ": "p", "ᆺ": "t", "ᆼ": "ng" // 簡化版
+        "ᆨ": "k", "ᆫ": "n", "ᆯ": "l", "ᆷ": "m", "ᆸ": "p", "ᆺ": "t", "ᆼ": "ng"
     };
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: 'u5Dqj7hU4_c',
-            playerVars: { 'autoplay': 0, 'modestbranding': 1, 'controls': 1 },
+            playerVars: { 'autoplay': 0, 'modestbranding': 1 },
             events: { 'onReady': startSync }
         });
     }
@@ -308,7 +293,6 @@
         const medial = MEDIALS[Math.floor((code % 588) / 28)];
         const final = FINALS[code % 28];
 
-        // 設置整字拼音
         const charRom = (typeof Aromanize !== 'undefined') ? Aromanize.romanize(char) : "";
         document.getElementById('modal-char').innerText = char;
         document.getElementById('modal-char-rom').innerText = charRom;
@@ -317,23 +301,25 @@
         const createCard = (val, label) => {
             if (!val) return '';
             const phon = JAMO_PHONETICS[val] || "?";
-            return `
-                <div class="jamo-card" onclick="speak('${val}')">
-                    <span class="jamo-val">${val}</span>
-                    <span class="jamo-rom">${phon}</span>
-                    <span class="jamo-label">${label}</span>
-                </div>
-            `;
+            return `<div class="jamo-card" onclick="speak('${val}')"><span class="jamo-val">${val}</span><span class="jamo-rom">${phon}</span></div>`;
         };
 
         grid.innerHTML = createCard(initial, 'Initial') + createCard(medial, 'Medial');
         if (final) grid.innerHTML += createCard(final, 'Final');
         
-        document.getElementById('modal').style.display = 'flex';
+        toggleModal('deconstructor-modal', true);
         player.pauseVideo();
     }
 
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function toggleModal(id, show) {
+        document.getElementById(id).style.display = show ? 'flex' : 'none';
+    }
+
+    function closeModal() {
+        toggleModal('tutorial-modal', false);
+        toggleModal('deconstructor-modal', false);
+    }
+
     function speak(t) { 
         const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; u.rate = 0.8;
         window.speechSynthesis.speak(u); 
