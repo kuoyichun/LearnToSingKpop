@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Pop Hangul Master - 單句循環學習版</title>
+    <title>K-Pop Hangul Master - 專業學習版</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -64,7 +64,6 @@
         .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
         .lyrics-list { max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 300px; }
         
-        /* 歌詞行優化 */
         .lyric-row { 
             display: flex;
             justify-content: space-between;
@@ -74,7 +73,7 @@
             border-radius: 12px; 
             cursor: pointer; 
             transition: 0.3s; 
-            opacity: 0.45; /* 提高非活躍歌詞可見度 */
+            opacity: 0.45; /* 提高非當前歌詞可見度 */
             border: 1px solid transparent; 
         }
         .lyric-row:hover { opacity: 0.8; background: rgba(255,255,255,0.03); }
@@ -84,24 +83,24 @@
         .line-ko { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; letter-spacing: 1.5px; }
         .line-rom { font-size: 1rem; color: var(--secondary); font-family: 'Roboto', sans-serif; opacity: 0.8; }
         
-        /* 循環按鈕樣式 */
-        .btn-loop {
-            background: #222; border: 1px solid #444; color: #666;
-            width: 40px; height: 40px; border-radius: 50%;
+        /* 單句播放按鈕樣式 */
+        .btn-play-sentence {
+            background: rgba(255,255,255,0.05); border: 1px solid #444; color: var(--secondary);
+            width: 44px; height: 44px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s; font-size: 1rem;
+            cursor: pointer; transition: 0.3s;
             margin-left: 20px;
         }
-        .btn-loop:hover { border-color: var(--secondary); color: var(--secondary); }
-        .btn-loop.looping { 
-            background: var(--secondary); color: #000; border-color: var(--secondary); 
+        .btn-play-sentence:hover { 
+            background: var(--secondary); color: #000; border-color: var(--secondary);
             box-shadow: 0 0 15px var(--secondary);
         }
+        .btn-play-sentence svg { width: 20px; height: 20px; fill: currentColor; }
 
         .char-interactive { display: inline-block; padding: 0 3px; transition: 0.2s; }
         .char-interactive:hover { color: var(--primary); transform: translateY(-3px); }
 
-        /* 彈窗樣式 (Modal) */
+        /* 彈窗樣式 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(15px); }
         .modal-content { background: #1a1a1a; padding: 35px; border-radius: 30px; border: 1px solid var(--secondary); position: relative; }
         
@@ -195,7 +194,7 @@
 <script>
     let player;
     let lyricsData = [];
-    let loopIndex = -1; // 當前正在循環的歌詞索引
+    let sentenceStopAt = null; // 用於控制單句播放暫停
 
     const JAMO_PHONETICS = {
         "ㄱ": "g", "ㄲ": "kk", "ㄴ": "n", "ㄷ": "d", "ㄸ": "tt", "ㄹ": "r/l", "ㅁ": "m", "ㅂ": "b", "ㅃ": "pp", "ㅅ": "s", "ㅆ": "ss", "ㅇ": "-", "ㅈ": "j", "ㅉ": "jj", "ㅊ": "ch", "ㅋ": "k", "ㅌ": "t", "ㅍ": "p", "ㅎ": "h",
@@ -244,14 +243,13 @@
         player.loadVideoById(videoId);
         const rawData = parseTranscript(rawText);
         
-        // 計算結束時間（下一句的開始時間）
+        // 計算結束時間 (當句開始 + 下一句開始時間的間隔，或預設 5 秒)
         lyricsData = rawData.map((item, idx) => ({
             ...item,
             end: rawData[idx+1] ? rawData[idx+1].start : item.start + 5,
             text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(item.text_ko) : ""
         }));
         
-        loopIndex = -1;
         renderLyrics();
     }
 
@@ -262,7 +260,11 @@
             const row = document.createElement('div');
             row.className = 'lyric-row';
             row.id = `line-${i}`;
-            row.onclick = () => player.seekTo(line.start);
+            row.onclick = () => {
+                sentenceStopAt = null; // 手動點擊行則不執行單句停止
+                player.seekTo(line.start);
+                player.playVideo();
+            };
 
             let hangulHtml = '';
             for (let char of line.text_ko) {
@@ -278,22 +280,21 @@
                     <div class="line-ko">${hangulHtml}</div>
                     <div class="line-rom">${line.text_rom}</div>
                 </div>
-                <button class="btn-loop ${loopIndex === i ? 'looping' : ''}" onclick="toggleLoop(event, ${i})">🔄</button>
+                <button class="btn-play-sentence" onclick="playSentenceOnce(event, ${i})" title="播放這句">
+                    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
             `;
             container.appendChild(row);
         });
     }
 
-    function toggleLoop(e, index) {
+    // 播放單句並停止
+    function playSentenceOnce(e, index) {
         e.stopPropagation();
-        if (loopIndex === index) {
-            loopIndex = -1; // 取消循環
-        } else {
-            loopIndex = index; // 設定新的循環句
-            player.seekTo(lyricsData[index].start);
-            player.playVideo();
-        }
-        renderLyrics(); // 重新渲染以更新按鈕狀態
+        const target = lyricsData[index];
+        sentenceStopAt = target.end;
+        player.seekTo(target.start);
+        player.playVideo();
     }
 
     function startSync() {
@@ -301,18 +302,17 @@
             if (!player || !player.getCurrentTime || lyricsData.length === 0) return;
             const now = player.getCurrentTime();
 
-            // 循環邏輯
-            if (loopIndex !== -1) {
-                const target = lyricsData[loopIndex];
-                if (now >= target.end) {
-                    player.seekTo(target.start);
-                }
+            // 單句停止邏輯
+            if (sentenceStopAt !== null && now >= sentenceStopAt) {
+                player.pauseVideo();
+                sentenceStopAt = null;
             }
 
-            // 同步滾動高亮
+            // 同步高亮與滾動
             for (let i = 0; i < lyricsData.length; i++) {
                 const line = lyricsData[i];
-                if (now >= line.start && now < line.end) {
+                const nextLine = lyricsData[i + 1];
+                if (now >= line.start && (!nextLine || now < nextLine.start)) {
                     const el = document.getElementById(`line-${i}`);
                     if (el && !el.classList.contains('active')) {
                         document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
@@ -358,11 +358,6 @@
 
     function toggleModal(id, show) {
         document.getElementById(id).style.display = show ? 'flex' : 'none';
-    }
-
-    function closeModal() {
-        toggleModal('tutorial-modal', false);
-        toggleModal('deconstructor-modal', false);
     }
 
     function speak(t) { 
