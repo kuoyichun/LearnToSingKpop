@@ -79,59 +79,72 @@
         if (player) player.loadVideoById(videoId);
         
         const status = document.getElementById('status-msg');
-        status.innerText = "正在連線至 YouTube 字幕庫...";
+        status.innerText = "正在解碼 YouTube 隱藏金鑰...";
         
         try {
-            // 第一步：獲取字幕清單 (使用 AllOrigins 代理繞過 CORS)
-            const listUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&type=list`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(listUrl)}`;
+            // 第一步：抓取影片的主網頁 HTML
+            const videoPageUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(videoPageUrl)}`;
             
             const res = await fetch(proxyUrl);
-            const proxyData = await res.json();
+            const data = await res.json();
+            const html = data.contents;
+
+            // 第二步：從 HTML 原始碼中尋找字幕 JSON 區塊
+            // YouTube 把字幕資訊放在 playerCaptionsTracklistRenderer 這個變數裡
+            const regex = /"playerCaptionsTracklistRenderer":\s*({.*?}),\s*"videoDetails"/;
+            const match = html.match(regex);
             
-            // 解析 XML 字幕清單
+            if (!match) {
+                throw new Error("無法在網頁中找到字幕金鑰，請確認該影片是否開啟了 CC 字幕。");
+            }
+
+            const captionsData = JSON.parse(match[1]);
+            const tracks = captionsData.captionTracks;
+
+            if (!tracks || tracks.length === 0) throw new Error("此影片無可用字幕軌。");
+
+            // 第三步：選擇語言 (優先找韓文，否則找第一個)
+            let targetTrack = tracks.find(t => t.languageCode === 'ko') || tracks[0];
+            
+            status.innerText = `已找到 [${targetTrack.name.simpleText}] 字幕，正在下載內容...`;
+
+            // 第四步：使用對方的 baseUrl 直接抓取 (通常 baseUrl 已經包含 CORS 許可)
+            // 如果直接 fetch 失敗，我們再套一次 Proxy
+            const subUrl = targetTrack.baseUrl;
+            const subRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(subUrl)}`);
+            const subData = await subRes.json();
+            
+            // 解析回傳的 XML
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(proxyData.contents, "text/xml");
-            const tracks = xmlDoc.getElementsByTagName("track");
-            
-            if (tracks.length === 0) throw new Error("此影片無 CC 字幕軌");
-
-            // 尋找韓文 (ko)，找不到則找英文 (en)，再不然找第一個
-            let lang = "ko";
-            let hasKo = Array.from(tracks).some(t => t.getAttribute("lang_code") === "ko");
-            if (!hasKo) lang = tracks[0].getAttribute("lang_code");
-
-            status.innerText = `正在抓取 [${lang}] 語言字幕...`;
-
-            // 第二步：下載 XML 字幕內容
-            const subUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}`;
-            const subProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(subUrl)}`;
-            
-            const subRes = await fetch(subProxyUrl);
-            const subProxyData = await subRes.json();
-            const subXml = parser.parseFromString(subProxyData.contents, "text/xml");
+            const subXml = parser.parseFromString(subData.contents, "text/xml");
             const textElements = subXml.getElementsByTagName("text");
 
-            // 第三步：轉換為本 App 格式並自動生成羅馬拼音
+            if (textElements.length === 0) throw new Error("字幕內容解析失敗。");
+
+            // 第五步：轉換格式並生成拼音
             lyricsData = Array.from(textElements).map(el => {
-                const rawText = el.textContent.replace(/&amp;#39;/g, "'").replace(/&quot;/g, '"');
+                const rawText = el.textContent
+                    .replace(/&amp;#39;/g, "'")
+                    .replace(/&quot;/g, '"')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>');
                 return {
                     start: parseFloat(el.getAttribute("start")),
                     end: parseFloat(el.getAttribute("start")) + parseFloat(el.getAttribute("dur") || 2),
                     text_ko: rawText,
-                    // 使用 aromanize 庫自動生成拼音
                     text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(rawText) : ""
                 };
             });
 
             renderLyrics();
-            status.innerText = `載入成功！(語言: ${lang})`;
-            alert("成功抓取官方字幕軌！拼音已自動生成。");
+            status.innerText = `載入成功！(語言: ${targetTrack.name.simpleText})`;
+            alert(`成功！已從 YouTube 原始碼提取加密字幕：${targetTrack.name.simpleText}`);
 
         } catch (err) {
             console.error(err);
             status.innerText = "失敗: " + err.message;
-            alert("抓取失敗：此影片可能封鎖了外部讀取，或無公開字幕。");
+            alert("抓取失敗：\n" + err.message);
         }
     }
 
