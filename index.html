@@ -79,50 +79,25 @@
         if (player) player.loadVideoById(videoId);
         
         const status = document.getElementById('status-msg');
-        status.innerText = "正在解碼 YouTube 隱藏金鑰...";
+        status.innerText = "正在透過 Google 轉接橋抓取字幕...";
         
         try {
-            // 第一步：抓取影片的主網頁 HTML
-            const videoPageUrl = `https://www.youtube.com/watch?v=${videoId}`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(videoPageUrl)}`;
+            // *** 請將下方的網址替換成您剛剛部署好的 Google Script 網址 ***
+            const gasUrl = `https://script.google.com/macros/s/AKfycbwi8EXBo1r_b8TymAVp0LXm4wzBtOchwR7QSNC8HNKSvA2mIluI8513EVe9QvQ-irok/exec`;
             
-            const res = await fetch(proxyUrl);
-            const data = await res.json();
-            const html = data.contents;
+            const res = await fetch(gasUrl);
+            const xmlText = await res.text();
 
-            // 第二步：從 HTML 原始碼中尋找字幕 JSON 區塊
-            // YouTube 把字幕資訊放在 playerCaptionsTracklistRenderer 這個變數裡
-            const regex = /"playerCaptionsTracklistRenderer":\s*({.*?}),\s*"videoDetails"/;
-            const match = html.match(regex);
-            
-            if (!match) {
-                throw new Error("無法在網頁中找到字幕金鑰，請確認該影片是否開啟了 CC 字幕。");
-            }
+            if (xmlText.startsWith("Error")) throw new Error(xmlText);
 
-            const captionsData = JSON.parse(match[1]);
-            const tracks = captionsData.captionTracks;
-
-            if (!tracks || tracks.length === 0) throw new Error("此影片無可用字幕軌。");
-
-            // 第三步：選擇語言 (優先找韓文，否則找第一個)
-            let targetTrack = tracks.find(t => t.languageCode === 'ko') || tracks[0];
-            
-            status.innerText = `已找到 [${targetTrack.name.simpleText}] 字幕，正在下載內容...`;
-
-            // 第四步：使用對方的 baseUrl 直接抓取 (通常 baseUrl 已經包含 CORS 許可)
-            // 如果直接 fetch 失敗，我們再套一次 Proxy
-            const subUrl = targetTrack.baseUrl;
-            const subRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(subUrl)}`);
-            const subData = await subRes.json();
-            
-            // 解析回傳的 XML
+            // 解析 XML
             const parser = new DOMParser();
-            const subXml = parser.parseFromString(subData.contents, "text/xml");
-            const textElements = subXml.getElementsByTagName("text");
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const textElements = xmlDoc.getElementsByTagName("text");
 
-            if (textElements.length === 0) throw new Error("字幕內容解析失敗。");
+            if (textElements.length === 0) throw new Error("影片沒有字幕或已被封鎖");
 
-            // 第五步：轉換格式並生成拼音
+            // 轉換格式並自動拼音
             lyricsData = Array.from(textElements).map(el => {
                 const rawText = el.textContent
                     .replace(/&amp;#39;/g, "'")
@@ -133,18 +108,18 @@
                     start: parseFloat(el.getAttribute("start")),
                     end: parseFloat(el.getAttribute("start")) + parseFloat(el.getAttribute("dur") || 2),
                     text_ko: rawText,
+                    // Aromanize 會在下面自動處理
                     text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(rawText) : ""
                 };
             });
 
             renderLyrics();
-            status.innerText = `載入成功！(語言: ${targetTrack.name.simpleText})`;
-            alert(`成功！已從 YouTube 原始碼提取加密字幕：${targetTrack.name.simpleText}`);
+            status.innerText = "載入成功！";
 
         } catch (err) {
             console.error(err);
             status.innerText = "失敗: " + err.message;
-            alert("抓取失敗：\n" + err.message);
+            alert("抓取失敗：此影片可能沒有 CC 字幕。");
         }
     }
 
