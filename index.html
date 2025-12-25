@@ -3,94 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Pop 韓語解構學習儀表板</title>
+    <title>Hangul Master - 核心學習排版</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0f0f0f; --panel: #1a1a1a; --primary: #ff007f; --secondary: #00e5ff; --text: #ffffff; --text-dim: #888; }
+        :root { 
+            --bg: #0a0a0a; 
+            --panel: #161616; 
+            --primary: #ff007f; 
+            --secondary: #00e5ff; 
+            --text: #ffffff; 
+            --text-dim: #666;
+            --active-bg: rgba(0, 229, 255, 0.1);
+        }
+
         body { background-color: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        .container { display: grid; grid-template-columns: 450px 1fr; width: 100%; height: 100%; }
 
-        /* 左側：設定與導入 */
-        .setup-section { background: var(--panel); padding: 25px; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
-        h1 { font-size: 1.5rem; color: var(--primary); margin: 0; }
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        label { font-size: 0.85rem; color: var(--text-dim); font-weight: bold; }
-        input, textarea { background: #252525; border: 1px solid #444; border-radius: 8px; color: white; padding: 12px; font-size: 0.9rem; }
-        textarea { height: 300px; font-family: monospace; line-height: 1.5; border: 1px dashed var(--secondary); }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; }
-        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 0, 127, 0.4); }
+        /* 佈局容器 */
+        .app-wrapper { display: flex; width: 100%; height: 100%; }
 
-        /* 右側：播放器與互動歌詞 */
-        .display-section { display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow: hidden; }
-        #player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        .lyrics-display { flex: 1; overflow-y: auto; padding-right: 10px; }
-        .lyric-row { padding: 15px; border-radius: 10px; margin-bottom: 12px; cursor: pointer; transition: 0.3s; border-left: 4px solid transparent; opacity: 0.4; }
-        .lyric-row:hover { background: rgba(255,255,255,0.05); opacity: 0.8; }
-        .lyric-row.active { opacity: 1; background: rgba(0, 229, 255, 0.1); border-left-color: var(--secondary); transform: translateX(10px); }
-        
-        .line-ko { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; }
-        .line-rom { font-size: 1rem; color: var(--secondary); font-family: 'Roboto', sans-serif; }
-        .char-interactive { display: inline-block; cursor: pointer; transition: 0.2s; }
-        .char-interactive:hover { color: var(--primary); transform: scale(1.2); }
+        /* 左側：設定與影片 (30%) */
+        .sidebar { 
+            width: 350px; 
+            background: var(--panel); 
+            border-right: 1px solid #222; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 15px;
+        }
 
-        /* 原子解構彈窗 */
+        .sidebar h1 { font-size: 1.2rem; color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        input, textarea { 
+            background: #222; 
+            border: 1px solid #333; 
+            border-radius: 6px; 
+            color: white; 
+            padding: 10px; 
+            font-size: 0.85rem; 
+        }
+        textarea { height: 180px; resize: none; font-family: monospace; }
+        input:focus, textarea:focus { border-color: var(--secondary); outline: none; }
+
+        .btn-load { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn-load:hover { background: #ff3399; }
+
+        /* 影片縮小顯示 */
+        #video-container { 
+            width: 100%; 
+            aspect-ratio: 16/9; 
+            background: #000; 
+            border-radius: 8px; 
+            margin-top: auto; /* 影片置底 */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        /* 右側：歌詞主視窗 (70%) */
+        .main-content { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--bg);
+            padding: 40px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .lyrics-list { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            width: 100%; 
+            padding-bottom: 300px; /* 底部留白方便滾動 */
+        }
+
+        .lyric-row { 
+            padding: 25px; 
+            margin-bottom: 15px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0.2;
+            border: 1px solid transparent;
+        }
+
+        .lyric-row:hover { opacity: 0.6; background: rgba(255,255,255,0.02); }
+
+        /* 當前播放歌詞：重點放大顯示 */
+        .lyric-row.active { 
+            opacity: 1; 
+            background: var(--active-bg); 
+            border-color: var(--secondary);
+            box-shadow: 0 10px 40px rgba(0, 229, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .line-ko { 
+            font-size: 2.5rem; /* 大字體學習重點 */
+            font-weight: 700; 
+            margin-bottom: 10px; 
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .line-rom { 
+            font-size: 1.2rem; 
+            color: var(--secondary); 
+            font-family: 'Roboto', sans-serif;
+            font-weight: 400;
+        }
+
+        .char-interactive { 
+            display: inline-block; 
+            padding: 0 4px;
+            transition: 0.2s;
+        }
+        .char-interactive:hover { 
+            color: var(--primary); 
+            text-shadow: 0 0 15px var(--primary);
+            transform: translateY(-5px);
+        }
+
+        /* 解構 Modal 樣式優化 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
-        .modal-content { background: #222; padding: 40px; border-radius: 25px; border: 2px solid var(--primary); text-align: center; width: 90%; max-width: 450px; }
-        .big-char { font-size: 8rem; color: white; display: block; margin-bottom: 20px; cursor: pointer; text-shadow: 0 0 20px var(--primary); }
-        .jamo-grid { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
-        .jamo-card { background: #333; padding: 20px; border-radius: 15px; min-width: 90px; cursor: pointer; border: 1px solid #444; transition: 0.2s; }
-        .jamo-card:hover { border-color: var(--secondary); background: #444; }
-        .jamo-val { font-size: 2.5rem; font-weight: bold; color: var(--secondary); display: block; }
-        .jamo-label { font-size: 0.8rem; color: #888; margin-top: 5px; display: block; }
+        .modal-content { background: #1a1a1a; padding: 40px; border-radius: 30px; border: 2px solid var(--secondary); text-align: center; width: 450px; }
+        .big-char { font-size: 10rem; color: white; display: block; margin-bottom: 20px; cursor: pointer; }
+        .jamo-grid { display: flex; justify-content: center; gap: 20px; }
+        .jamo-card { background: #252525; padding: 25px; border-radius: 20px; min-width: 100px; cursor: pointer; border: 1px solid #333; }
+        .jamo-card:hover { border-color: var(--primary); background: #333; }
+        .jamo-val { font-size: 3rem; font-weight: bold; color: var(--secondary); display: block; }
+        .jamo-label { color: #555; font-size: 0.8rem; margin-top: 10px; display: block; }
 
-        @media (max-width: 1000px) { .container { grid-template-columns: 1fr; } .setup-section { height: auto; } }
+        /* 手機適應 */
+        @media (max-width: 800px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; }
+            .main-content { padding: 20px; }
+            .line-ko { font-size: 1.5rem; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <!-- 左側面板 -->
-    <div class="setup-section">
-        <h1>K-Pop Hangul Master</h1>
+<div class="app-wrapper">
+    <!-- 左側控制欄 -->
+    <aside class="sidebar">
+        <h1>HANGUL MASTER</h1>
         
         <div class="input-group">
-            <label>YouTube 網址</label>
-            <input type="text" id="yt-url" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/watch?v=u5Dqj7hU4_c">
+            <label>YouTube URL</label>
+            <input type="text" id="yt-url" placeholder="Paste URL here..." value="https://www.youtube.com/watch?v=u5Dqj7hU4_c">
         </div>
 
         <div class="input-group">
-            <label>貼上轉錄稿 (支援：時間 \n 歌詞)</label>
-            <textarea id="transcript-input" placeholder="0:17&#10;시커먼 내 세상은 Blue&#10;0:19&#10;파랗게 멍이 든 my heart"></textarea>
-            <small style="color:#666">提示：從 YouTube 影片說明欄點擊「顯示轉錄稿」，直接複製過來即可。</small>
+            <label>Paste Transcript</label>
+            <textarea id="transcript-input" placeholder="YouTube Format:&#10;0:17&#10;시커먼 내 세상은 Blue..."></textarea>
         </div>
 
-        <button class="btn-main" onclick="loadEverything()">開始沉浸式學習</button>
-    </div>
+        <button class="btn-load" onclick="loadEverything()">START LEARNING</button>
+        
+        <p style="font-size: 0.7rem; color:#444; line-height: 1.4;">
+            How to get lyrics:<br>
+            1. Open YouTube Video<br>
+            2. Click "Show Transcript"<br>
+            3. Copy/Paste everything here.
+        </p>
 
-    <!-- 右側播放與歌詞 -->
-    <div class="display-section">
-        <div id="player-container">
+        <!-- 影片縮小區域 -->
+        <div id="video-container">
             <div id="player"></div>
         </div>
-        <div class="lyrics-display" id="lyrics-list">
-            <!-- 歌詞會出現在這裡 -->
-            <div style="text-align: center; margin-top: 100px; color: #444;">
-                <h3>等待載入中...</h3>
-                <p>請在左側貼上轉錄稿文字</p>
+    </aside>
+
+    <!-- 右側歌詞主學習區 -->
+    <main class="main-content" id="main-scroll">
+        <div class="lyrics-list" id="lyrics-list">
+            <div style="text-align: center; margin-top: 10vh; color: #333;">
+                <h2 style="font-size: 3rem;">Ready?</h2>
+                <p>Paste your lyrics in the sidebar to begin.</p>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
-<!-- 原子解構 Modal -->
+<!-- Modal -->
 <div class="modal" id="modal">
     <div class="modal-content">
         <button onclick="closeModal()" style="float:right; background:none; border:none; color:white; font-size:2rem; cursor:pointer;">&times;</button>
         <span class="big-char" id="modal-char" onclick="speak(this.innerText)"></span>
-        <p style="color:var(--primary); font-size:0.8rem;">點擊大字聽整字發音，點擊部件聽單音</p>
         <div class="jamo-grid" id="modal-jamo-grid"></div>
+        <p style="color:#555; margin-top:30px;">Click to hear the sound.</p>
     </div>
 </div>
 
@@ -100,10 +213,11 @@
     let player;
     let lyricsData = [];
 
-    // 1. 初始化播放器
+    // 初始化播放器
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: 'u5Dqj7hU4_c',
+            playerVars: { 'autoplay': 0, 'modestbranding': 1, 'controls': 1 },
             events: { 'onReady': startSync }
         });
     }
@@ -113,67 +227,44 @@
         return (m && m[2].length === 11) ? m[2] : null;
     }
 
-    // 2. 解析轉錄稿：支援 YouTube 複製貼上的格式
+    // 解析器：處理 YouTube 轉錄稿
     function parseTranscript(text) {
         const lines = text.split('\n').map(l => l.trim()).filter(l => l !== "");
         const parsed = [];
-        
         for (let i = 0; i < lines.length; i++) {
-            // 檢查是否為時間標籤 (格式如 0:12, 1:23, 05:40)
             const timeMatch = lines[i].match(/^(\d{1,2}:)?\d{1,2}:\d{2}$/);
             if (timeMatch) {
                 const timeStr = timeMatch[0];
                 const parts = timeStr.split(':').map(parseFloat);
-                let seconds = 0;
-                if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-                else seconds = parts[0] * 60 + parts[1];
-
-                // 找下一行作為歌詞內容
+                let seconds = parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
                 const lyricContent = lines[i + 1] || "";
                 if (lyricContent && !lyricContent.match(/^(\d{1,2}:)?\d{1,2}:\d{2}$/)) {
-                    parsed.push({
-                        start: seconds,
-                        text_ko: lyricContent
-                    });
-                    i++; // 跳過已讀取的歌詞行
+                    parsed.push({ start: seconds, text_ko: lyricContent });
+                    i++;
                 }
-            } else {
-                // 如果沒有時間標籤，就當作純歌詞，每句間隔 3 秒 ( fallback )
-                parsed.push({
-                    start: parsed.length * 3,
-                    text_ko: lines[i]
-                });
             }
         }
         return parsed;
     }
 
-    // 3. 載入功能
     function loadEverything() {
         const url = document.getElementById('yt-url').value;
         const rawText = document.getElementById('transcript-input').value;
         const videoId = getID(url);
-
-        if (!videoId) return alert("請提供有效的影片網址");
-        if (!rawText) return alert("請貼上轉錄稿內容");
+        if (!videoId || !rawText) return alert("Please check URL and Transcript.");
 
         player.loadVideoById(videoId);
-
-        // 解析並自動轉換拼音
         const rawData = parseTranscript(rawText);
         lyricsData = rawData.map(item => ({
             ...item,
             text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(item.text_ko) : ""
         }));
-
         renderLyrics();
     }
 
-    // 4. 渲染 UI
     function renderLyrics() {
         const container = document.getElementById('lyrics-list');
         container.innerHTML = "";
-
         lyricsData.forEach((line, i) => {
             const row = document.createElement('div');
             row.className = 'lyric-row';
@@ -189,24 +280,18 @@
                 }
             }
 
-            row.innerHTML = `
-                <div class="line-ko">${hangulHtml}</div>
-                <div class="line-rom">${line.text_rom}</div>
-            `;
+            row.innerHTML = `<div class="line-ko">${hangulHtml}</div><div class="line-rom">${line.text_rom}</div>`;
             container.appendChild(row);
         });
     }
 
-    // 5. 同步滾動
     function startSync() {
         setInterval(() => {
             if (!player || !player.getCurrentTime || lyricsData.length === 0) return;
             const now = player.getCurrentTime();
-            
             for (let i = 0; i < lyricsData.length; i++) {
                 const line = lyricsData[i];
                 const nextLine = lyricsData[i + 1];
-                
                 if (now >= line.start && (!nextLine || now < nextLine.start)) {
                     const el = document.getElementById(`line-${i}`);
                     if (el && !el.classList.contains('active')) {
@@ -220,28 +305,21 @@
         }, 300);
     }
 
-    // 6. 原子解構邏輯
     function openDeconstructor(e, char) {
         e.stopPropagation();
         const INITIALS = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
         const MEDIALS = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"];
         const FINALS = ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
-
         const code = char.charCodeAt(0) - 0xAC00;
         if (code < 0 || code > 11171) return;
-
         const initial = INITIALS[Math.floor(code / 588)];
         const medial = MEDIALS[Math.floor((code % 588) / 28)];
         const final = FINALS[code % 28];
-
         document.getElementById('modal-char').innerText = char;
         const grid = document.getElementById('modal-jamo-grid');
-        grid.innerHTML = `
-            <div class="jamo-card" onclick="speak('${initial}')"><span class="jamo-val">${initial}</span><span class="jamo-label">聲母</span></div>
-            <div class="jamo-card" onclick="speak('${medial}')"><span class="jamo-val">${medial}</span><span class="jamo-label">韻母</span></div>
-        `;
-        if (final) grid.innerHTML += `<div class="jamo-card" onclick="speak('${final}')"><span class="jamo-val">${final}</span><span class="jamo-label">韻尾</span></div>`;
-        
+        grid.innerHTML = `<div class="jamo-card" onclick="speak('${initial}')"><span class="jamo-val">${initial}</span><span class="jamo-label">Initial</span></div>
+                          <div class="jamo-card" onclick="speak('${medial}')"><span class="jamo-val">${medial}</span><span class="jamo-label">Medial</span></div>`;
+        if (final) grid.innerHTML += `<div class="jamo-card" onclick="speak('${final}')"><span class="jamo-val">${final}</span><span class="jamo-label">Final</span></div>`;
         document.getElementById('modal').style.display = 'flex';
         player.pauseVideo();
     }
