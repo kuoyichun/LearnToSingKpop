@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Pop Hangul Master - 專業學習版</title>
+    <title>K-Pop Hangul Master - 學習定格版</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -19,7 +19,7 @@
         body { background-color: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         .app-wrapper { display: flex; width: 100%; height: 100%; }
 
-        /* 左側側邊欄 */
+        /* 左側側邊欄 (480px) */
         .sidebar { 
             width: 480px; 
             background: var(--panel); 
@@ -73,7 +73,7 @@
             border-radius: 12px; 
             cursor: pointer; 
             transition: 0.3s; 
-            opacity: 0.45; /* 提高非當前歌詞可見度 */
+            opacity: 0.45; /* 保持非當前歌詞的可見度 */
             border: 1px solid transparent; 
         }
         .lyric-row:hover { opacity: 0.8; background: rgba(255,255,255,0.03); }
@@ -83,33 +83,23 @@
         .line-ko { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; letter-spacing: 1.5px; }
         .line-rom { font-size: 1rem; color: var(--secondary); font-family: 'Roboto', sans-serif; opacity: 0.8; }
         
-        /* 單句播放按鈕樣式 */
+        /* 單句播放按鈕 (喇叭圖示) */
         .btn-play-sentence {
             background: rgba(255,255,255,0.05); border: 1px solid #444; color: var(--secondary);
             width: 44px; height: 44px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s;
-            margin-left: 20px;
+            cursor: pointer; transition: 0.3s; margin-left: 20px;
         }
-        .btn-play-sentence:hover { 
-            background: var(--secondary); color: #000; border-color: var(--secondary);
-            box-shadow: 0 0 15px var(--secondary);
-        }
+        .btn-play-sentence:hover { background: var(--secondary); color: #000; border-color: var(--secondary); box-shadow: 0 0 15px var(--secondary); }
         .btn-play-sentence svg { width: 20px; height: 20px; fill: currentColor; }
 
         .char-interactive { display: inline-block; padding: 0 3px; transition: 0.2s; }
         .char-interactive:hover { color: var(--primary); transform: translateY(-3px); }
 
-        /* 彈窗樣式 */
+        /* 彈窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(15px); }
         .modal-content { background: #1a1a1a; padding: 35px; border-radius: 30px; border: 1px solid var(--secondary); position: relative; }
-        
         .tutorial-content { width: 550px; text-align: left; }
-        .tutorial-content h2 { color: var(--secondary); margin-top: 0; }
-        .step-list { list-style: none; padding: 0; }
-        .step-list li { margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; }
-        .step-num { background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; font-weight: bold; }
-        
         .deconstructor-content { width: 480px; text-align: center; }
         .big-char { font-size: 8rem; color: white; display: block; cursor: pointer; line-height: 1; }
         .big-char-rom { font-size: 1.5rem; color: var(--primary); font-weight: bold; margin-top: 10px; display: block; text-transform: uppercase; }
@@ -117,10 +107,8 @@
         .jamo-card { background: #252525; padding: 20px; border-radius: 15px; min-width: 90px; cursor: pointer; border: 1px solid #333; transition: 0.2s; }
         .jamo-val { font-size: 2.5rem; font-weight: bold; color: var(--secondary); display: block; }
         .jamo-rom { color: #aaa; font-size: 0.9rem; display: block; margin-top: 5px; }
-
         .close-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: #666; font-size: 2rem; cursor: pointer; }
-        .close-btn:hover { color: white; }
-
+        
         @media (max-width: 1000px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width: 100%; } }
     </style>
 </head>
@@ -129,12 +117,10 @@
 <div class="app-wrapper">
     <aside class="sidebar">
         <h1>HANGUL MASTER</h1>
-        
         <div class="input-group">
             <label>YouTube URL</label>
-            <input type="text" id="yt-url" placeholder="Paste URL..." value="https://www.youtube.com/watch?v=EmeW6li6bbo">
+            <input type="text" id="yt-url" placeholder="Paste URL..." value="https://www.youtube.com/watch?v=u5Dqj7hU4_c">
         </div>
-
         <div class="input-group">
             <div class="label-row">
                 <label>Paste Transcript</label>
@@ -142,12 +128,8 @@
             </div>
             <textarea id="transcript-input" placeholder="YouTube Format:&#10;0:17&#10;시커먼 내 세상은 Blue..."></textarea>
         </div>
-
         <button class="btn-load" onclick="loadEverything()">START LEARNING</button>
-        
-        <div id="video-container">
-            <div id="player"></div>
-        </div>
+        <div id="video-container"><div id="player"></div></div>
     </aside>
 
     <main class="main-content">
@@ -160,23 +142,22 @@
     </main>
 </div>
 
-<!-- 教學說明 Modal -->
+<!-- 教學彈窗 -->
 <div class="modal-overlay" id="tutorial-modal">
     <div class="modal-content tutorial-content">
         <button class="close-btn" onclick="toggleModal('tutorial-modal', false)">&times;</button>
         <h2>如何獲取 YouTube 轉錄稿？</h2>
-        <ul class="step-list">
-            <li><span class="step-num">1</span><div>在 YouTube 影片下方介紹欄點選「更多內容」並往下滑。</div></li>
-            <li><span class="step-num">2</span><div>找到並點擊「顯示轉錄稿」按鈕。</div></li>
-            <li><span class="step-num">3</span><div>影片右方會出現字幕紀錄面板，點擊底部的語言選單。</div></li>
-            <li><span class="step-num">4</span><div>將語言切換為「韓文」 (Korean)。</div></li>
-            <li><span class="step-num">5</span><div>複製所有時間與文字，貼回到本工具的輸入框中。</div></li>
+        <ul style="list-style:none; padding:0">
+            <li style="margin-bottom:10px">1. 點選介紹欄的「更多內容」。</li>
+            <li style="margin-bottom:10px">2. 點擊「顯示轉錄稿」。</li>
+            <li style="margin-bottom:10px">3. 底下切換語言為「韓文」。</li>
+            <li style="margin-bottom:10px">4. 複製所有時間與文字貼回此處。</li>
         </ul>
         <button class="btn-load" style="width:100%" onclick="toggleModal('tutorial-modal', false)">我明白了</button>
     </div>
 </div>
 
-<!-- 原子解構 Modal -->
+<!-- 解構彈窗 -->
 <div class="modal-overlay" id="deconstructor-modal">
     <div class="modal-content deconstructor-content">
         <button class="close-btn" onclick="toggleModal('deconstructor-modal', false)">&times;</button>
@@ -185,7 +166,6 @@
             <span class="big-char-rom" id="modal-char-rom"></span>
         </div>
         <div class="jamo-grid" id="modal-jamo-grid"></div>
-        <p style="color:#444; margin-top:30px; font-size: 0.85rem;">Click any part to hear the sound.</p>
     </div>
 </div>
 
@@ -194,7 +174,8 @@
 <script>
     let player;
     let lyricsData = [];
-    let sentenceStopAt = null; // 用於控制單句播放暫停
+    let sentenceStopAt = null; // 記錄停止時間
+    let lockedIndex = -1;      // 強制鎖定的高亮行索引
 
     const JAMO_PHONETICS = {
         "ㄱ": "g", "ㄲ": "kk", "ㄴ": "n", "ㄷ": "d", "ㄸ": "tt", "ㄹ": "r/l", "ㅁ": "m", "ㅂ": "b", "ㅃ": "pp", "ㅅ": "s", "ㅆ": "ss", "ㅇ": "-", "ㅈ": "j", "ㅉ": "jj", "ㅊ": "ch", "ㅋ": "k", "ㅌ": "t", "ㅍ": "p", "ㅎ": "h",
@@ -206,8 +187,18 @@
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: 'u5Dqj7hU4_c',
             playerVars: { 'autoplay': 0, 'modestbranding': 1 },
-            events: { 'onReady': startSync }
+            events: { 
+                'onReady': startSync,
+                'onStateChange': onPlayerStateChange 
+            }
         });
+    }
+
+    // 當使用者手動播放影片時，解除鎖定
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING && sentenceStopAt === null) {
+            lockedIndex = -1; 
+        }
     }
 
     function getID(url) {
@@ -243,13 +234,15 @@
         player.loadVideoById(videoId);
         const rawData = parseTranscript(rawText);
         
-        // 計算結束時間 (當句開始 + 下一句開始時間的間隔，或預設 5 秒)
         lyricsData = rawData.map((item, idx) => ({
             ...item,
-            end: rawData[idx+1] ? rawData[idx+1].start : item.start + 5,
+            // 為了避免邊界問題，結束時間減去 0.1 秒
+            end: rawData[idx+1] ? rawData[idx+1].start - 0.1 : item.start + 5,
             text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(item.text_ko) : ""
         }));
         
+        lockedIndex = -1;
+        sentenceStopAt = null;
         renderLyrics();
     }
 
@@ -261,7 +254,8 @@
             row.className = 'lyric-row';
             row.id = `line-${i}`;
             row.onclick = () => {
-                sentenceStopAt = null; // 手動點擊行則不執行單句停止
+                lockedIndex = -1;
+                sentenceStopAt = null;
                 player.seekTo(line.start);
                 player.playVideo();
             };
@@ -280,7 +274,7 @@
                     <div class="line-ko">${hangulHtml}</div>
                     <div class="line-rom">${line.text_rom}</div>
                 </div>
-                <button class="btn-play-sentence" onclick="playSentenceOnce(event, ${i})" title="播放這句">
+                <button class="btn-play-sentence" onclick="playSentenceOnce(event, ${i})">
                     <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                 </button>
             `;
@@ -288,11 +282,11 @@
         });
     }
 
-    // 播放單句並停止
     function playSentenceOnce(e, index) {
         e.stopPropagation();
         const target = lyricsData[index];
-        sentenceStopAt = target.end;
+        lockedIndex = index;       // 鎖定當前行為高亮
+        sentenceStopAt = target.end; // 設定停止時間
         player.seekTo(target.start);
         player.playVideo();
     }
@@ -306,20 +300,32 @@
             if (sentenceStopAt !== null && now >= sentenceStopAt) {
                 player.pauseVideo();
                 sentenceStopAt = null;
+                // 暫停後不清除 lockedIndex，讓高亮留在這一行
             }
 
-            // 同步高亮與滾動
-            for (let i = 0; i < lyricsData.length; i++) {
-                const line = lyricsData[i];
-                const nextLine = lyricsData[i + 1];
-                if (now >= line.start && (!nextLine || now < nextLine.start)) {
-                    const el = document.getElementById(`line-${i}`);
-                    if (el && !el.classList.contains('active')) {
-                        document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
-                        el.classList.add('active');
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // 更新高亮邏輯
+            let activeIdx = -1;
+            
+            if (lockedIndex !== -1) {
+                // 如果處於鎖定狀態，則高亮維持在鎖定的行
+                activeIdx = lockedIndex;
+            } else {
+                // 否則，根據目前時間尋找對應行
+                for (let i = 0; i < lyricsData.length; i++) {
+                    const line = lyricsData[i];
+                    if (now >= line.start && now < line.end + 0.1) {
+                        activeIdx = i;
+                        break;
                     }
-                    break;
+                }
+            }
+
+            if (activeIdx !== -1) {
+                const el = document.getElementById(`line-${activeIdx}`);
+                if (el && !el.classList.contains('active')) {
+                    document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
+                    el.classList.add('active');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
         }, 200);
@@ -356,10 +362,7 @@
         player.pauseVideo();
     }
 
-    function toggleModal(id, show) {
-        document.getElementById(id).style.display = show ? 'flex' : 'none';
-    }
-
+    function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
     function speak(t) { 
         const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; u.rate = 0.8;
         window.speechSynthesis.speak(u); 
