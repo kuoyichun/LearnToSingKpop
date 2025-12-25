@@ -72,54 +72,55 @@
 
     // 2. 核心功能：抓取官方字幕
     async function loadUserVideo() {
-        const url = document.getElementById('yt-url-input').value;
-        const videoId = getID(url);
+        const urlInput = document.getElementById('yt-url-input');
+        const videoId = getID(urlInput.value.trim());
         if (!videoId) return alert("網址無效");
 
         if (player) player.loadVideoById(videoId);
         
         const status = document.getElementById('status-msg');
-        status.innerText = "正在透過 Google 轉接橋抓取字幕...";
+        status.innerText = "正在連線至 Google 轉接橋...";
         
         try {
-            // *** 請將下方的網址替換成您剛剛部署好的 Google Script 網址 ***
-            const gasUrl = `https://script.google.com/macros/s/AKfycbwi8EXBo1r_b8TymAVp0LXm4wzBtOchwR7QSNC8HNKSvA2mIluI8513EVe9QvQ-irok/exec`;
+            // *** 這裡請確認填入的是你最新的 GAS 網址 ***
+            const gasUrl = `你的_GAS_網址?videoId=${videoId}`;
             
             const res = await fetch(gasUrl);
-            const xmlText = await res.text();
+            const text = await res.text();
 
-            if (xmlText.startsWith("Error")) throw new Error(xmlText);
+            // 診斷：如果回傳的是 Error 字樣
+            if (text.startsWith("Error")) {
+                throw new Error(text);
+            }
 
-            // 解析 XML
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const xmlDoc = parser.parseFromString(text, "text/xml");
             const textElements = xmlDoc.getElementsByTagName("text");
 
-            if (textElements.length === 0) throw new Error("影片沒有字幕或已被封鎖");
+            if (textElements.length === 0) {
+                throw new Error("抓取到的內容不包含字幕標籤。");
+            }
 
-            // 轉換格式並自動拼音
             lyricsData = Array.from(textElements).map(el => {
                 const rawText = el.textContent
                     .replace(/&amp;#39;/g, "'")
-                    .replace(/&quot;/g, '"')
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>');
+                    .replace(/&quot;/g, '"');
                 return {
                     start: parseFloat(el.getAttribute("start")),
                     end: parseFloat(el.getAttribute("start")) + parseFloat(el.getAttribute("dur") || 2),
                     text_ko: rawText,
-                    // Aromanize 會在下面自動處理
-                    text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(rawText) : ""
+                    text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(rawText) : "處理中..."
                 };
             });
 
             renderLyrics();
             status.innerText = "載入成功！";
+            alert("字幕與自動拼音載入成功！");
 
         } catch (err) {
             console.error(err);
-            status.innerText = "失敗: " + err.message;
-            alert("抓取失敗：此影片可能沒有 CC 字幕。");
+            status.innerText = "抓取失敗：" + err.message;
+            alert("失敗原因：" + err.message);
         }
     }
 
