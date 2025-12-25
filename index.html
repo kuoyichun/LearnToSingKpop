@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Pop Hangul Master - 沈浸式學習</title>
+    <title>K-Pop Hangul Master - 單句循環學習版</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -12,8 +12,8 @@
             --primary: #ff007f; 
             --secondary: #00e5ff; 
             --text: #ffffff; 
-            --text-dim: #666;
-            --active-bg: rgba(0, 229, 255, 0.1);
+            --text-dim: #888;
+            --active-bg: rgba(0, 229, 255, 0.12);
         }
 
         body { background-color: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -38,7 +38,6 @@
         .label-row { display: flex; justify-content: space-between; align-items: center; }
         label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
         
-        /* 教學按鈕樣式 */
         .btn-tutorial { 
             background: none; border: 1px solid var(--secondary); color: var(--secondary);
             font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; cursor: pointer;
@@ -51,7 +50,6 @@
             color: white; padding: 10px; font-size: 0.85rem; 
         }
         textarea { height: 150px; resize: none; font-family: monospace; border: 1px dashed #444; }
-        textarea:focus { border-color: var(--primary); outline: none; }
 
         .btn-load { 
             background: var(--primary); color: white; border: none; 
@@ -65,26 +63,54 @@
         /* 右側歌詞區 */
         .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
         .lyrics-list { max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 300px; }
-        .lyric-row { padding: 20px; margin-bottom: 10px; border-radius: 12px; cursor: pointer; transition: 0.3s; opacity: 0.15; border: 1px solid transparent; }
+        
+        /* 歌詞行優化 */
+        .lyric-row { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px; 
+            margin-bottom: 10px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            opacity: 0.45; /* 提高非活躍歌詞可見度 */
+            border: 1px solid transparent; 
+        }
+        .lyric-row:hover { opacity: 0.8; background: rgba(255,255,255,0.03); }
         .lyric-row.active { opacity: 1; background: var(--active-bg); border-color: var(--secondary); transform: scale(1.02); }
+        
+        .lyric-content { flex: 1; }
         .line-ko { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; color: #fff; letter-spacing: 1.5px; }
         .line-rom { font-size: 1rem; color: var(--secondary); font-family: 'Roboto', sans-serif; opacity: 0.8; }
+        
+        /* 循環按鈕樣式 */
+        .btn-loop {
+            background: #222; border: 1px solid #444; color: #666;
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s; font-size: 1rem;
+            margin-left: 20px;
+        }
+        .btn-loop:hover { border-color: var(--secondary); color: var(--secondary); }
+        .btn-loop.looping { 
+            background: var(--secondary); color: #000; border-color: var(--secondary); 
+            box-shadow: 0 0 15px var(--secondary);
+        }
+
         .char-interactive { display: inline-block; padding: 0 3px; transition: 0.2s; }
         .char-interactive:hover { color: var(--primary); transform: translateY(-3px); }
 
-        /* 通用彈窗樣式 (Modal) */
+        /* 彈窗樣式 (Modal) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(15px); }
         .modal-content { background: #1a1a1a; padding: 35px; border-radius: 30px; border: 1px solid var(--secondary); position: relative; }
         
-        /* 教學彈窗特定樣式 */
         .tutorial-content { width: 550px; text-align: left; }
         .tutorial-content h2 { color: var(--secondary); margin-top: 0; }
         .step-list { list-style: none; padding: 0; }
-        .step-list li { margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; line-height: 1.5; }
+        .step-list li { margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; }
         .step-num { background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; font-weight: bold; }
-        .highlight-text { color: var(--primary); font-weight: bold; }
-
-        /* 解構彈窗特定樣式 */
+        
         .deconstructor-content { width: 480px; text-align: center; }
         .big-char { font-size: 8rem; color: white; display: block; cursor: pointer; line-height: 1; }
         .big-char-rom { font-size: 1.5rem; color: var(--primary); font-weight: bold; margin-top: 10px; display: block; text-transform: uppercase; }
@@ -141,26 +167,11 @@
         <button class="close-btn" onclick="toggleModal('tutorial-modal', false)">&times;</button>
         <h2>如何獲取 YouTube 轉錄稿？</h2>
         <ul class="step-list">
-            <li>
-                <span class="step-num">1</span>
-                <div>在 YouTube 影片下方介紹欄點選 <span class="highlight-text">「更多內容」</span> 並往下滑。</div>
-            </li>
-            <li>
-                <span class="step-num">2</span>
-                <div>找到並點擊 <span class="highlight-text">「顯示轉錄稿」</span> 按鈕。</div>
-            </li>
-            <li>
-                <span class="step-num">3</span>
-                <div>影片右方會出現字幕紀錄面板，點擊底部的 <span class="highlight-text">語言選單</span>。</div>
-            </li>
-            <li>
-                <span class="step-num">4</span>
-                <div>將語言切換為 <span class="highlight-text">「韓文」</span> (Korean)。</div>
-            </li>
-            <li>
-                <span class="step-num">5</span>
-                <div>選取並 <span class="highlight-text">複製</span> 所有時間與歌詞文字，貼回到本工具的輸入框中。</div>
-            </li>
+            <li><span class="step-num">1</span><div>在 YouTube 影片下方介紹欄點選「更多內容」並往下滑。</div></li>
+            <li><span class="step-num">2</span><div>找到並點擊「顯示轉錄稿」按鈕。</div></li>
+            <li><span class="step-num">3</span><div>影片右方會出現字幕紀錄面板，點擊底部的語言選單。</div></li>
+            <li><span class="step-num">4</span><div>將語言切換為「韓文」 (Korean)。</div></li>
+            <li><span class="step-num">5</span><div>複製所有時間與文字，貼回到本工具的輸入框中。</div></li>
         </ul>
         <button class="btn-load" style="width:100%" onclick="toggleModal('tutorial-modal', false)">我明白了</button>
     </div>
@@ -184,6 +195,7 @@
 <script>
     let player;
     let lyricsData = [];
+    let loopIndex = -1; // 當前正在循環的歌詞索引
 
     const JAMO_PHONETICS = {
         "ㄱ": "g", "ㄲ": "kk", "ㄴ": "n", "ㄷ": "d", "ㄸ": "tt", "ㄹ": "r/l", "ㅁ": "m", "ㅂ": "b", "ㅃ": "pp", "ㅅ": "s", "ㅆ": "ss", "ㅇ": "-", "ㅈ": "j", "ㅉ": "jj", "ㅊ": "ch", "ㅋ": "k", "ㅌ": "t", "ㅍ": "p", "ㅎ": "h",
@@ -231,10 +243,15 @@
 
         player.loadVideoById(videoId);
         const rawData = parseTranscript(rawText);
-        lyricsData = rawData.map(item => ({
+        
+        // 計算結束時間（下一句的開始時間）
+        lyricsData = rawData.map((item, idx) => ({
             ...item,
+            end: rawData[idx+1] ? rawData[idx+1].start : item.start + 5,
             text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(item.text_ko) : ""
         }));
+        
+        loopIndex = -1;
         renderLyrics();
     }
 
@@ -255,19 +272,47 @@
                     hangulHtml += char;
                 }
             }
-            row.innerHTML = `<div class="line-ko">${hangulHtml}</div><div class="line-rom">${line.text_rom}</div>`;
+
+            row.innerHTML = `
+                <div class="lyric-content">
+                    <div class="line-ko">${hangulHtml}</div>
+                    <div class="line-rom">${line.text_rom}</div>
+                </div>
+                <button class="btn-loop ${loopIndex === i ? 'looping' : ''}" onclick="toggleLoop(event, ${i})">🔄</button>
+            `;
             container.appendChild(row);
         });
+    }
+
+    function toggleLoop(e, index) {
+        e.stopPropagation();
+        if (loopIndex === index) {
+            loopIndex = -1; // 取消循環
+        } else {
+            loopIndex = index; // 設定新的循環句
+            player.seekTo(lyricsData[index].start);
+            player.playVideo();
+        }
+        renderLyrics(); // 重新渲染以更新按鈕狀態
     }
 
     function startSync() {
         setInterval(() => {
             if (!player || !player.getCurrentTime || lyricsData.length === 0) return;
             const now = player.getCurrentTime();
+
+            // 循環邏輯
+            if (loopIndex !== -1) {
+                const target = lyricsData[loopIndex];
+                if (now >= target.end) {
+                    player.seekTo(target.start);
+                }
+            }
+
+            // 同步滾動高亮
             for (let i = 0; i < lyricsData.length; i++) {
                 const line = lyricsData[i];
-                const nextLine = lyricsData[i + 1];
-                if (now >= line.start && (!nextLine || now < nextLine.start)) {
+                if (now >= line.start && now < line.end) {
                     const el = document.getElementById(`line-${i}`);
                     if (el && !el.classList.contains('active')) {
                         document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
@@ -277,7 +322,7 @@
                     break;
                 }
             }
-        }, 300);
+        }, 200);
     }
 
     function openDeconstructor(e, char) {
