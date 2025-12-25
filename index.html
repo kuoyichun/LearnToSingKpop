@@ -151,18 +151,20 @@
             }
         }
 
-        // 2. 自動翻譯 (批次處理)
+        // 2. 自動翻譯 (使用 JSON 陣列確保 100% 對齊)
         try {
-            const combinedText = rawParsed.map(item => item.text_ko).join(' ||| ');
-            const res = await fetch(`${TRANSLATE_API_URL}?text=${encodeURIComponent(combinedText)}`);
+            const textsToTranslate = rawParsed.map(item => item.text_ko);
+            // 將陣列轉為 JSON 字串放入參數
+            const res = await fetch(`${TRANSLATE_API_URL}?data=${encodeURIComponent(JSON.stringify(textsToTranslate))}`);
             const data = await res.json();
-            const translatedArray = data.translatedText.split(' ||| ');
+            
+            if (data.error) throw new Error(data.error);
 
             lyricsData = rawParsed.map((item, idx) => ({
                 ...item,
                 end: rawParsed[idx+1] ? rawParsed[idx+1].start - 0.1 : item.start + 5,
                 text_rom: (typeof Aromanize !== 'undefined') ? Aromanize.romanize(item.text_ko) : "",
-                text_zh: translatedArray[idx] ? translatedArray[idx].trim() : "..."
+                text_zh: data.translations[idx] || "..." // 直接從回傳陣列取值
             }));
 
             player.loadVideoById(videoId);
@@ -170,8 +172,8 @@
             btn.disabled = false;
             btn.innerText = "START LEARNING";
         } catch (err) {
-            console.error(err);
-            alert("翻譯服務連線失敗，請檢查您的 GAS 部署網址是否正確。");
+            console.error("Translation Error:", err);
+            alert("翻譯失敗！這可能是因為歌詞太長超過 Google 限制。建議分段貼上，或檢查 GAS 部署。");
             btn.disabled = false;
             btn.innerText = "START LEARNING";
         }
