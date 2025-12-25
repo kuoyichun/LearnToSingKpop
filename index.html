@@ -257,4 +257,8 @@
         player.pauseVideo();
     }
     function toggleModal(id, s) { document.getElementById(id).style.display = s ? 'flex' : 'none'; }
-    function speak(t) { const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; win
+    function speak(t) { const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; window.speechSynthesis.speak(u); }
+    var tag = document.createElement('script'); tag.src = "https://www.youtube.com/iframe_api"; document.body.appendChild(tag);
+</script>
+</body>
+</html>
