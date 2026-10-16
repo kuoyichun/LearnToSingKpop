@@ -36,6 +36,17 @@ pip install -r requirements.txt
 python server.py        # 自動開啟 http://localhost:8000
 ```
 
+### 用手機連家裡的電腦
+
+```bash
+python server.py --lan  # 會印出手機要開的網址，例如 http://192.168.1.23:8000
+```
+
+- 手機要連同一個 Wi-Fi；Windows 第一次執行時，防火牆詢問請允許 Python 使用「私人網路」。
+- 電腦要關掉自動睡眠；建議在路由器把電腦設成固定 IP，網址才不會變（學習紀錄是跟著網址存的）。
+- 出門在外（4G/5G）要連回家：在電腦和手機都裝 [Tailscale](https://tailscale.com/)（免費），
+  再用 Tailscale 顯示的電腦名稱或 IP 開 `http://<名稱>:8000`。不建議在路由器開 port 對外公開。
+
 ### Vercel
 
 直接部署即可（`/api` 由 `api/index.py` 提供）。若搜尋時一直出現「被 YouTube 擋下」，
