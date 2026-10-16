@@ -18,12 +18,14 @@
             --active-bg: rgba(0, 229, 255, 0.12);
         }
 
+        [hidden] { display: none !important; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         .app-wrapper { display: flex; width: 100%; height: 100%; }
 
         /* 左側側邊欄 (480px) */
         .sidebar {
             width: 480px;
+            flex-shrink: 0;
             background: var(--panel);
             border-right: 1px solid #222;
             display: flex;
@@ -33,6 +35,7 @@
             gap: 15px;
             z-index: 10;
         }
+        .controls { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 15px; }
 
         .sidebar h1 { font-size: 1.2rem; color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
 
@@ -69,19 +72,26 @@
         .status { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; }
         .status:empty { display: none; }
         .status.ok { color: var(--secondary); }
+        .status.warn { color: var(--translation); }
         .status.error { color: var(--error); }
 
-        /* 候選影片 */
-        .candidates { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        /* 搜尋結果 / 最近學習 */
+        .tabs { display: flex; gap: 16px; border-bottom: 1px solid #262626; }
+        .tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-dim); padding: 4px 2px 6px; margin-bottom: -1px; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+        .tab.on { color: var(--text); border-bottom-color: var(--secondary); }
+        .list { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .empty-note { color: #555; font-size: 0.8rem; padding: 6px 2px; line-height: 1.6; }
         .candidate { display: flex; gap: 10px; padding: 6px; border-radius: 8px; border: 1px solid transparent; background: #1c1c1c; cursor: pointer; transition: 0.2s; }
         .candidate:hover { border-color: #333; }
         .candidate.selected { border-color: var(--secondary); background: var(--active-bg); }
         .candidate.disabled { opacity: 0.4; cursor: default; }
         .candidate.disabled:hover { border-color: transparent; }
         .candidate img { width: 96px; height: 54px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #000; }
-        .cand-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .cand-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
         .cand-title { font-size: 0.8rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .cand-meta { font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cand-del { background: none; border: none; color: #555; font-size: 1.1rem; line-height: 1; cursor: pointer; align-self: flex-start; padding: 2px 4px; }
+        .cand-del:hover { color: var(--error); }
         .badge { font-size: 0.65rem; padding: 1px 7px; border-radius: 10px; align-self: flex-start; background: #2a2a2a; color: #888; }
         .badge.manual { background: rgba(0, 229, 255, 0.15); color: var(--secondary); }
         .badge.auto { background: rgba(255, 204, 0, 0.15); color: var(--translation); }
@@ -91,15 +101,29 @@
         .manual-mode summary:hover { color: var(--text); }
         .manual-body { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
-        #video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; margin-top: auto; flex-shrink: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; }
+        #video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; flex-shrink: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.5); overflow: hidden; }
 
         /* 右側歌詞區 */
-        .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
-        .lesson-header { max-width: 800px; margin: 0 auto 20px; width: 100%; padding: 0 20px; box-sizing: border-box; }
+        .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); padding: 0 40px 40px; overflow-y: auto; scroll-behavior: smooth; }
+
+        /* 練習工具列 */
+        .toolbar { position: sticky; top: 0; z-index: 5; background: var(--bg); max-width: 800px; width: 100%; margin: 0 auto; padding: 20px 20px 12px; box-sizing: border-box; border-bottom: 1px solid #1f1f1f; display: flex; flex-direction: column; gap: 10px; }
+        .lesson-head { display: flex; gap: 12px; align-items: flex-start; }
+        .lesson-info { flex: 1; min-width: 0; }
         .lesson-title { font-size: 1.1rem; font-weight: 700; }
         .lesson-sub { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
         .lesson-sub .warn { color: var(--translation); }
-        .lyrics-list { max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 300px; }
+        .tool-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+        .tool-group { display: flex; align-items: center; gap: 4px; }
+        .tool-label { font-size: 0.7rem; color: var(--text-dim); margin-right: 2px; }
+        .tool-value { font-size: 0.75rem; min-width: 44px; text-align: center; }
+        .chip { background: #1e1e1e; border: 1px solid #333; color: #ccc; font-size: 0.75rem; padding: 3px 9px; border-radius: 14px; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        .chip:hover { border-color: var(--secondary); color: #fff; }
+        .chip.on { background: var(--secondary); border-color: var(--secondary); color: #000; }
+        select.chip { padding: 3px 6px; }
+        .shortcut-hint { font-size: 0.7rem; color: #555; }
+
+        .lyrics-list { max-width: 800px; margin: 0 auto; width: 100%; padding: 16px 0 300px; }
 
         .lyric-row {
             display: flex;
@@ -115,12 +139,19 @@
         }
         .lyric-row:hover { opacity: 0.8; background: rgba(255,255,255,0.03); }
         .lyric-row.active { opacity: 1; background: var(--active-bg); border-color: var(--secondary); transform: scale(1.02); }
+        .lyric-row.in-loop { box-shadow: inset 4px 0 0 var(--primary); }
 
         .lyric-content { flex: 1; }
         .line-ko { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #fff; letter-spacing: 1.5px; }
         .line-rom { font-size: 1rem; color: var(--secondary); font-family: 'Roboto', sans-serif; margin-bottom: 4px; }
         .line-zh { font-size: 1rem; color: var(--translation); font-weight: 500; }
         .line-zh.pending { color: #555; font-weight: 400; }
+
+        /* 背歌詞模式：模糊選定的欄位，點文字可偷看 */
+        .hide-ko .lyric-row:not(.peek) .line-ko,
+        .hide-rom .lyric-row:not(.peek) .line-rom,
+        .hide-zh .lyric-row:not(.peek) .line-zh { filter: blur(9px); user-select: none; }
+        .hide-ko .lyric-row:not(.peek) .char-interactive { pointer-events: none; }
 
         .btn-play-sentence {
             background: rgba(255,255,255,0.05); border: 1px solid #444; color: var(--secondary);
@@ -147,13 +178,23 @@
         .jamo-rom { color: #aaa; font-size: 0.9rem; display: block; margin-top: 5px; }
         .close-btn { position: absolute; top: 20px; right: 25px; background: none; border: none; color: #666; font-size: 2rem; cursor: pointer; }
 
+        /* 手機：影片固定在畫面上方，歌詞在下面捲動 */
         @media (max-width: 1000px) {
             body { flex-direction: column; overflow-y: auto; height: auto; }
             .app-wrapper { flex-direction: column; height: auto; }
-            .sidebar { width: 100%; }
-            .candidates { max-height: 40vh; }
-            .main-content { padding: 20px 16px; overflow-y: visible; }
+            .sidebar { display: contents; }
+            .controls { background: var(--panel); padding: 16px; border-bottom: 1px solid #222; }
+            .list { max-height: 40vh; }
+            #video-container { position: sticky; top: 0; z-index: 50; border-radius: 0; }
+            .main-content { padding: 0 12px 40px; overflow-y: visible; }
+            .toolbar { position: static; padding: 14px 4px 12px; }
+            .shortcut-hint { display: none; }
+            .lyric-row { padding: 14px; }
+            .lyric-row.active { transform: none; }
             .line-ko { font-size: 1.4rem; }
+            .btn-play-sentence { margin-left: 10px; }
+            .jamo-grid { gap: 8px; }
+            .jamo-card { min-width: 0; padding: 14px; }
         }
     </style>
 </head>
@@ -161,35 +202,44 @@
 
 <div class="app-wrapper">
     <aside class="sidebar">
-        <h1>HANGUL MASTER</h1>
+        <div class="controls">
+            <h1>HANGUL MASTER</h1>
 
-        <form class="search-row" onsubmit="event.preventDefault(); searchSong();">
-            <input type="text" id="search-input" placeholder="歌名 + 歌手，或貼上 YouTube 網址" autocomplete="off">
-            <button type="submit" class="btn-load" id="search-btn">搜尋</button>
-        </form>
-        <div class="status" id="status-msg"></div>
+            <form class="search-row" onsubmit="event.preventDefault(); searchSong();">
+                <input type="text" id="search-input" placeholder="歌名 + 歌手，或貼上 YouTube 網址" autocomplete="off">
+                <button type="submit" class="btn-load" id="search-btn">搜尋</button>
+            </form>
+            <div class="status" id="status-msg"></div>
 
-        <div class="candidates" id="candidates"></div>
-
-        <details class="manual-mode">
-            <summary>手動模式：自己貼網址與轉錄稿</summary>
-            <div class="manual-body">
-                <div class="input-group">
-                    <label>YouTube URL</label>
-                    <input type="text" id="yt-url" placeholder="Paste YouTube URL here..." value="">
-                </div>
-
-                <div class="input-group">
-                    <div class="label-row">
-                        <label>Paste Transcript (Korean)</label>
-                        <button class="btn-tutorial" onclick="toggleModal('tutorial-modal', true)">ⓘ 如何取得轉錄稿？</button>
-                    </div>
-                    <textarea id="transcript-input" placeholder="0:17&#10;시커먼 내 세상은 Blue..."></textarea>
-                </div>
-
-                <button class="btn-load" id="load-btn" onclick="loadEverything()">START LEARNING</button>
+            <div class="tabs">
+                <button class="tab on" data-tab="results" onclick="showTab('results')">搜尋結果</button>
+                <button class="tab" data-tab="history" onclick="showTab('history')">最近學習<span id="history-count"></span></button>
             </div>
-        </details>
+            <div class="list" id="candidates">
+                <div class="empty-note">輸入歌名搜尋後，候選影片會列在這裡。</div>
+            </div>
+            <div class="list" id="history-list" hidden></div>
+
+            <details class="manual-mode">
+                <summary>手動模式：自己貼網址與轉錄稿</summary>
+                <div class="manual-body">
+                    <div class="input-group">
+                        <label>YouTube URL</label>
+                        <input type="text" id="yt-url" placeholder="Paste YouTube URL here..." value="">
+                    </div>
+
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label>Paste Transcript (Korean)</label>
+                            <button class="btn-tutorial" onclick="toggleModal('tutorial-modal', true)">ⓘ 如何取得轉錄稿？</button>
+                        </div>
+                        <textarea id="transcript-input" placeholder="0:17&#10;시커먼 내 세상은 Blue..."></textarea>
+                    </div>
+
+                    <button class="btn-load" id="load-btn" onclick="loadEverything()">START LEARNING</button>
+                </div>
+            </details>
+        </div>
 
         <div id="video-container">
             <div id="player"></div>
@@ -197,9 +247,52 @@
     </aside>
 
     <main class="main-content">
-        <div class="lesson-header" id="lesson-header" hidden>
-            <div class="lesson-title" id="lesson-title"></div>
-            <div class="lesson-sub" id="lesson-sub"></div>
+        <div class="toolbar" id="toolbar" hidden>
+            <div class="lesson-head">
+                <div class="lesson-info">
+                    <div class="lesson-title" id="lesson-title"></div>
+                    <div class="lesson-sub" id="lesson-sub"></div>
+                </div>
+                <button class="chip" onclick="shareLesson()" title="複製這首歌的連結，可分享或加入書籤">🔗 分享</button>
+            </div>
+            <div class="tool-row">
+                <div class="tool-group" title="播放速度">
+                    <span class="tool-label">速度</span>
+                    <button class="chip" data-rate="0.5">0.5×</button>
+                    <button class="chip" data-rate="0.75">0.75×</button>
+                    <button class="chip" data-rate="1">1×</button>
+                </div>
+                <div class="tool-group" title="按 🔊 或 R 播放單句時要重複幾次">
+                    <span class="tool-label">單句重複</span>
+                    <select class="chip" id="repeat-select">
+                        <option value="1">1 次</option>
+                        <option value="2">2 次</option>
+                        <option value="3">3 次</option>
+                        <option value="5">5 次</option>
+                        <option value="0">無限</option>
+                    </select>
+                </div>
+                <div class="tool-group" title="A-B 循環：唱到想開始的句子按 A，唱到結束的句子按 B（Esc 取消）">
+                    <span class="tool-label">循環</span>
+                    <button class="chip" onclick="setLoopPoint('A')">A</button>
+                    <button class="chip" onclick="setLoopPoint('B')">B</button>
+                    <button class="chip" onclick="clearLoop()" title="取消循環">✕</button>
+                    <span class="tool-value" id="loop-label">未設定</span>
+                </div>
+                <div class="tool-group" title="字幕比歌聲早出現就按 +，比歌聲晚出現就按 −">
+                    <span class="tool-label">時間軸</span>
+                    <button class="chip" onclick="adjustOffset(-0.5)">−</button>
+                    <span class="tool-value" id="offset-label">±0.0s</span>
+                    <button class="chip" onclick="adjustOffset(0.5)">+</button>
+                </div>
+                <div class="tool-group" title="背歌詞：把要測驗的部分模糊起來，點歌詞文字可以偷看">
+                    <span class="tool-label">遮住</span>
+                    <button class="chip" data-hide="ko">韓</button>
+                    <button class="chip" data-hide="rom">拼</button>
+                    <button class="chip" data-hide="zh">中</button>
+                </div>
+            </div>
+            <div class="shortcut-hint">⌨ 空白鍵 播放/暫停 · ← → 上/下一句 · R 重複本句 · A / B 設定循環 · Esc 取消循環</div>
         </div>
         <div class="lyrics-list" id="lyrics-list">
             <div style="text-align: center; margin-top: 15vh; color: #333;">
@@ -243,15 +336,37 @@
     // 字幕搜尋 API：部署在 Vercel 或用 python server.py 時都是同網域的 /api；直接開 HTML 檔時改連本機 server.py
     const SUBTITLE_API_URL = (location.protocol === 'file:' ? 'http://localhost:8000' : '') + '/api';
 
+    const HISTORY_KEY = 'hm:history';
+    const LESSON_KEY = 'hm:lesson:';
+    const PREFS_KEY = 'hm:prefs';
+    const HISTORY_LIMIT = 30;
+
+    // localStorage 在無痕模式等情況可能無法使用，全部包在 try/catch 裡
+    const store = {
+        get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } },
+        set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
+        remove(key) { try { localStorage.removeItem(key); } catch {} }
+    };
+
+    const prefs = Object.assign({ rate: 1, repeat: 1 }, store.get(PREFS_KEY, {}));
+    prefs.hide = Object.assign({ ko: false, rom: false, zh: false }, prefs.hide);
+
     let player;
     let playerReady = false;
     let pendingVideoId = null;
+    let lesson = null;          // { transcript, meta: { title, channel } }
     let lyricsData = [];
-    let sentenceStopAt = null;
-    let lockedIndex = -1;
-    let lessonToken = 0;
     let candidates = [];
     let currentVideoId = null;
+    let currentIdx = -1;
+    let sentenceStopAt = null;
+    let lockedIndex = -1;
+    let repeatLeft = 0;
+    let seekGuardUntil = 0;
+    let loopA = -1;
+    let loopB = -1;
+    let timeOffset = 0;         // 正數 = 歌詞延後出現
+    let lessonToken = 0;
 
     const STATUS_LABELS = {
         manual: '韓文字幕 ✓',
@@ -268,7 +383,7 @@
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%', width: '100%',
-            playerVars: { 'autoplay': 0, 'modestbranding': 1, 'rel': 0 },
+            playerVars: { 'autoplay': 0, 'modestbranding': 1, 'rel': 0, 'playsinline': 1 },
             events: {
                 'onReady': () => {
                     playerReady = true;
@@ -276,11 +391,13 @@
                     if (pendingVideoId) { player.loadVideoById(pendingVideoId); pendingVideoId = null; }
                 },
                 'onStateChange': (e) => {
-                    if (e.data === 1 && !sentenceStopAt) lockedIndex = -1;
+                    if (e.data !== 1) return; // 1 = 播放中
+                    if (sentenceStopAt === null) lockedIndex = -1;
+                    if (player.getPlaybackRate && player.getPlaybackRate() !== prefs.rate) player.setPlaybackRate(prefs.rate);
                     // 貼網址載入時沒有標題，播放後從播放器補上
-                    const titleEl = document.getElementById('lesson-title');
-                    if (e.data === 1 && !titleEl.textContent && player.getVideoData) {
-                        titleEl.textContent = player.getVideoData().title || '';
+                    if (lesson && !lesson.meta.title && player.getVideoData) {
+                        const title = player.getVideoData().title;
+                        if (title) { lesson.meta.title = title; renderLessonInfo(); saveLesson(); }
                     }
                 }
             }
@@ -291,6 +408,11 @@
         currentVideoId = videoId;
         if (playerReady) player.loadVideoById(videoId);
         else pendingVideoId = videoId;
+    }
+
+    function seek(lyricTime) {
+        player.seekTo(Math.max(0, lyricTime + timeOffset), true);
+        seekGuardUntil = performance.now() + 400; // 剛跳轉時 getCurrentTime 可能還是舊的時間
     }
 
     function getID(url) {
@@ -305,6 +427,8 @@
     function romanize(text) {
         return (typeof Aromanize !== 'undefined') ? Aromanize.romanize(text) : "";
     }
+
+    function isMobile() { return window.matchMedia('(max-width: 1000px)').matches; }
 
     function setStatus(msg, type = '') {
         const el = document.getElementById('status-msg');
@@ -329,6 +453,7 @@
         btn.disabled = true;
         setStatus(getID(q) ? '讀取影片字幕中…' : `搜尋「${q}」，正在檢查前幾支影片有沒有韓文字幕…`);
         renderCandidates([]);
+        showTab('results');
 
         try {
             const data = await callSubtitleApi({ q });
@@ -336,6 +461,8 @@
             if (data.transcript) {
                 const meta = candidates.find(c => c.videoId === data.transcript.videoId) || {};
                 startLesson(data.transcript, meta);
+                const t = data.transcript;
+                setStatus(describeLoaded(t), t.source === 'lrclib' || t.isGenerated ? 'warn' : 'ok');
             } else {
                 setStatus(data.error || '無法取得韓文字幕。', 'error');
             }
@@ -347,15 +474,38 @@
         }
     }
 
+    function describeLoaded(t) {
+        if (t.source === 'lrclib') {
+            return `YouTube 前幾名都沒有韓文字幕，改用 LRCLIB 同步歌詞「${t.song || ''}」。時間軸對不上時用工具列的 ± 微調，或在左側換一支影片。`;
+        }
+        const others = candidates.filter(c => c.videoId !== t.videoId && (c.status === 'manual' || c.status === 'auto')).length;
+        let msg = `已載入 ${t.lines.length} 行歌詞`;
+        if (t.translation) msg += '，中文使用影片的官方字幕';
+        if (others) msg += `；左側還有 ${others} 支影片也有字幕可切換`;
+        return msg + '。';
+    }
+
+    function candidatePickable(c) {
+        if (c.status === 'manual' || c.status === 'auto') return true;
+        // LRCLIB 歌詞不綁影片，可以換任何一支能播放的影片
+        return !!lesson && lesson.transcript.source === 'lrclib' && c.status !== 'unavailable';
+    }
+
     // 從候選清單換另一支影片
     async function pickCandidate(videoId) {
         const meta = candidates.find(c => c.videoId === videoId);
-        if (!meta || !['manual', 'auto'].includes(meta.status) || videoId === currentVideoId) return;
+        if (!meta || !candidatePickable(meta) || videoId === currentVideoId) return;
+        if (meta.status !== 'manual' && meta.status !== 'auto') {
+            startLesson({ ...lesson.transcript, videoId }, meta);
+            setStatus('已換成這支影片，歌詞仍是 LRCLIB 同步歌詞；時間軸對不上可用 ± 微調。', 'warn');
+            return;
+        }
         setStatus(`讀取「${meta.title}」的字幕中…`);
         try {
             const data = await callSubtitleApi({ videoId });
             if (data.transcript) {
                 startLesson(data.transcript, meta);
+                setStatus(describeLoaded(data.transcript), data.transcript.isGenerated ? 'warn' : 'ok');
             } else {
                 setStatus(data.error || '無法取得此影片的韓文字幕。', 'error');
             }
@@ -370,9 +520,8 @@
         const container = document.getElementById('candidates');
         container.innerHTML = '';
         list.forEach(c => {
-            const usable = c.status === 'manual' || c.status === 'auto';
             const item = document.createElement('div');
-            item.className = 'candidate' + (usable ? '' : ' disabled');
+            item.className = 'candidate';
             item.dataset.videoId = c.videoId;
             item.title = c.note || '';
             item.onclick = () => pickCandidate(c.videoId);
@@ -386,54 +535,79 @@
             `;
             container.appendChild(item);
         });
-        markSelectedCandidate();
+        refreshCandidateStates();
     }
 
-    function markSelectedCandidate() {
-        document.querySelectorAll('.candidate').forEach(el => {
+    function refreshCandidateStates() {
+        document.querySelectorAll('#candidates .candidate').forEach(el => {
+            const c = candidates.find(x => x.videoId === el.dataset.videoId);
+            el.classList.toggle('disabled', !c || !candidatePickable(c));
             el.classList.toggle('selected', el.dataset.videoId === currentVideoId);
         });
     }
 
-    // lines: [{ start, duration?, text }]
-    function startLesson(transcript, meta = {}) {
+    function showTab(name) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
+        document.getElementById('candidates').hidden = name !== 'results';
+        document.getElementById('history-list').hidden = name !== 'history';
+    }
+
+    // ===== 開始一首歌 =====
+    // transcript: { videoId, source: 'youtube' | 'lrclib' | 'manual', lines: [{ start, duration?, text, zh?, mt? }], ... }
+    function startLesson(transcript, meta = {}, opts = {}) {
         const token = ++lessonToken;
+        lesson = { transcript, meta: { title: meta.title || '', channel: meta.channel || '' } };
+        timeOffset = opts.offset || 0;
         const lines = transcript.lines;
         lyricsData = lines.map((line, idx) => {
             const next = lines[idx + 1];
             let end = line.duration ? line.start + line.duration : (next ? next.start - 0.1 : line.start + 5);
             if (next && end > next.start - 0.1) end = next.start - 0.1;
             return {
+                src: line,
                 start: line.start,
                 end: Math.max(end, line.start + 0.5),
                 text_ko: line.text,
                 text_rom: romanize(line.text),
-                text_zh: ""
+                text_zh: line.zh || line.mt || ""
             };
         });
         lockedIndex = -1;
+        currentIdx = -1;
         sentenceStopAt = null;
+        loopA = loopB = -1;
 
-        document.getElementById('lesson-header').hidden = false;
-        document.getElementById('lesson-title').textContent = meta.title || '';
-        const source = transcript.isGenerated
-            ? '<span class="warn">⚠ YouTube 自動產生的字幕，歌詞可能有錯字</span>'
-            : (transcript.languageCode ? '韓文字幕（人工）' : '手動貼上的轉錄稿');
-        document.getElementById('lesson-sub').innerHTML = [meta.channel && escapeHtml(meta.channel), source].filter(Boolean).join(' · ');
-
+        document.getElementById('toolbar').hidden = false;
+        renderLessonInfo();
+        updateOffsetUi();
         loadVideo(transcript.videoId);
-        markSelectedCandidate();
+        refreshCandidateStates();
         renderLyrics();
-        if (transcript.languageCode) {
-            const others = candidates.filter(c => c.videoId !== transcript.videoId && (c.status === 'manual' || c.status === 'auto')).length;
-            setStatus(`已載入 ${lyricsData.length} 行歌詞` + (others ? `，下方還有 ${others} 支影片也有字幕可切換。` : '。'), 'ok');
-        }
+        updateLoopUi();
+        updateShareUrl();
+        saveLesson();
+        if (isMobile()) document.getElementById('video-container').scrollIntoView({ behavior: 'smooth' });
         translateLyrics(token);
     }
 
-    // 批次翻譯：重複的歌詞只翻一次，並切成多個請求避免網址太長
+    function renderLessonInfo() {
+        const { transcript: t, meta } = lesson;
+        document.getElementById('lesson-title').textContent = meta.title || t.song || '';
+        let source;
+        if (t.source === 'lrclib') source = '<span class="warn">歌詞：LRCLIB 同步歌詞，時間軸可能需要微調</span>';
+        else if (t.source === 'manual') source = '手動貼上的轉錄稿';
+        else if (t.isGenerated) source = '<span class="warn">⚠ YouTube 自動產生的字幕，歌詞可能有錯字</span>';
+        else source = '韓文字幕（人工）';
+        const zh = t.translation
+            ? `中文：影片官方字幕${t.translation.coverage < 1 ? '（其餘機器翻譯）' : ''}`
+            : '中文：機器翻譯';
+        document.getElementById('lesson-sub').innerHTML = [meta.channel && escapeHtml(meta.channel), source, zh].filter(Boolean).join(' · ');
+    }
+
+    // 批次翻譯：只翻沒有官方中文的句子，重複的歌詞只翻一次，並切成多個請求避免網址太長
     async function translateLyrics(token) {
-        const unique = [...new Set(lyricsData.map(l => l.text_ko))];
+        const unique = [...new Set(lyricsData.filter(l => !l.text_zh).map(l => l.text_ko))];
+        if (!unique.length) return;
         const chunks = [];
         let current = [];
         for (const text of unique) {
@@ -464,12 +638,125 @@
             if (results[ci][ti]) translated.set(text, results[ci][ti]);
         }));
         lyricsData.forEach((line, i) => {
+            if (line.text_zh) return;
             line.text_zh = translated.get(line.text_ko) || "";
+            if (line.text_zh) line.src.mt = line.text_zh; // 機器翻譯也存進學習紀錄，下次不用再翻
             const el = document.querySelector(`#line-${i} .line-zh`);
             if (el) { el.textContent = line.text_zh; el.classList.remove('pending'); }
         });
-        if (translated.size === 0 && unique.length) {
-            setStatus('翻譯服務沒有回應，先顯示韓文與拼音。', 'error');
+        if (translated.size) saveLesson();
+        else setStatus('翻譯服務沒有回應，先顯示韓文與拼音。', 'error');
+    }
+
+    // ===== 學習紀錄（存在瀏覽器 localStorage） =====
+    function getHistory() { return store.get(HISTORY_KEY, []); }
+
+    function saveLesson() {
+        if (!lesson) return;
+        const { transcript, meta } = lesson;
+        const videoId = transcript.videoId;
+        const entry = { videoId, title: meta.title || transcript.song || '', channel: meta.channel, source: transcript.source, isGenerated: !!transcript.isGenerated, savedAt: Date.now() };
+        let list = getHistory().filter(h => h.videoId !== videoId);
+        list.unshift(entry);
+        list.slice(HISTORY_LIMIT).forEach(h => store.remove(LESSON_KEY + h.videoId));
+        list = list.slice(0, HISTORY_LIMIT);
+        // 空間不夠時從最舊的紀錄開始刪
+        while (!store.set(LESSON_KEY + videoId, { transcript, meta, offset: timeOffset }) && list.length > 1) {
+            store.remove(LESSON_KEY + list.pop().videoId);
+        }
+        store.set(HISTORY_KEY, list);
+        renderHistory();
+    }
+
+    function removeHistory(videoId) {
+        store.remove(LESSON_KEY + videoId);
+        store.set(HISTORY_KEY, getHistory().filter(h => h.videoId !== videoId));
+        renderHistory();
+    }
+
+    function openFromHistory(videoId) {
+        const data = store.get(LESSON_KEY + videoId);
+        if (!data) {
+            removeHistory(videoId);
+            return setStatus('這筆紀錄的歌詞已不在瀏覽器裡，請重新搜尋。', 'error');
+        }
+        startLesson(data.transcript, data.meta, { offset: data.offset });
+        setStatus('從學習紀錄載入，不需要再連線 YouTube。', 'ok');
+    }
+
+    function renderHistory() {
+        const list = getHistory();
+        document.getElementById('history-count').textContent = list.length ? ` (${list.length})` : '';
+        const container = document.getElementById('history-list');
+        container.innerHTML = list.length ? '' : '<div class="empty-note">學過的歌會自動存在這裡，下次點一下就能直接開始。</div>';
+        const badges = { lrclib: ['auto', 'LRCLIB 歌詞'], manual: ['', '手動貼上'] };
+        list.forEach(h => {
+            const [badgeClass, badgeText] = badges[h.source] || (h.isGenerated ? ['auto', '自動字幕'] : ['manual', '韓文字幕']);
+            const saved = new Date(h.savedAt);
+            const item = document.createElement('div');
+            item.className = 'candidate' + (h.videoId === currentVideoId ? ' selected' : '');
+            item.onclick = () => openFromHistory(h.videoId);
+            item.innerHTML = `
+                <img src="https://i.ytimg.com/vi/${encodeURIComponent(h.videoId)}/mqdefault.jpg" alt="" loading="lazy">
+                <div class="cand-info">
+                    <div class="cand-title">${escapeHtml(h.title || h.videoId)}</div>
+                    <div class="cand-meta">${escapeHtml([h.channel, `${saved.getMonth() + 1}/${saved.getDate()}`].filter(Boolean).join(' · '))}</div>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <button class="cand-del" title="從紀錄移除">&times;</button>
+            `;
+            item.querySelector('.cand-del').onclick = (e) => { e.stopPropagation(); removeHistory(h.videoId); };
+            container.appendChild(item);
+        });
+    }
+
+    // ===== 分享連結：?v=影片ID（LRCLIB 歌詞加 &lrc=，有微調加 &offset=），也支援 ?q=歌名 =====
+    function updateShareUrl() {
+        const t = lesson.transcript;
+        const params = new URLSearchParams({ v: t.videoId });
+        if (t.source === 'lrclib' && t.lrclibId) params.set('lrc', t.lrclibId);
+        if (timeOffset) params.set('offset', timeOffset);
+        try { window.history.replaceState(null, '', `${location.pathname}?${params}`); } catch {}
+    }
+
+    async function shareLesson() {
+        try {
+            await navigator.clipboard.writeText(location.href);
+            setStatus('已複製這首歌的連結，可以分享或加入書籤。', 'ok');
+        } catch {
+            prompt('複製這個連結：', location.href);
+        }
+    }
+
+    async function initFromUrl() {
+        const params = new URLSearchParams(location.search);
+        const videoId = params.get('v');
+        const lrc = params.get('lrc');
+        const offset = params.has('offset') ? parseFloat(params.get('offset')) || 0 : null;
+        if (videoId) {
+            const cached = store.get(LESSON_KEY + videoId);
+            if (cached && (!lrc || String(cached.transcript.lrclibId) === lrc)) {
+                startLesson(cached.transcript, cached.meta, { offset: offset ?? cached.offset });
+                setStatus('從學習紀錄載入。', 'ok');
+                return;
+            }
+            setStatus('讀取連結中的歌曲…');
+            try {
+                const data = await callSubtitleApi(lrc ? { videoId, lrc } : { videoId });
+                if (data.transcript) {
+                    startLesson(data.transcript, {}, { offset: offset || 0 });
+                    setStatus(describeLoaded(data.transcript), 'ok');
+                } else {
+                    setStatus(data.error || '無法取得這首歌的字幕。', 'error');
+                }
+            } catch (err) {
+                setStatus(`無法連線到字幕服務：${err.message}`, 'error');
+            }
+        } else if (params.get('q')) {
+            document.getElementById('search-input').value = params.get('q');
+            searchSong();
+        } else if (getHistory().length) {
+            showTab('history');
         }
     }
 
@@ -505,17 +792,23 @@
         if (!lines.length) return alert("轉錄稿格式無法辨識：需要「時間」與「歌詞」交錯的格式。");
 
         setStatus('');
-        startLesson({ videoId, lines }, {});
+        startLesson({ videoId, source: 'manual', lines }, {});
     }
 
     function renderLyrics() {
         const container = document.getElementById('lyrics-list');
         container.innerHTML = "";
+        applyHide();
         lyricsData.forEach((line, i) => {
             const row = document.createElement('div');
             row.className = 'lyric-row';
             row.id = `line-${i}`;
-            row.onclick = () => { lockedIndex = -1; sentenceStopAt = null; player.seekTo(line.start); player.playVideo(); };
+            row.onclick = () => {
+                if (!playerReady) return;
+                lockedIndex = -1; sentenceStopAt = null;
+                highlight(i);
+                seek(line.start); player.playVideo();
+            };
 
             let hangulHtml = '';
             for (let char of line.text_ko) {
@@ -528,45 +821,165 @@
                 <div class="lyric-content">
                     <div class="line-ko">${hangulHtml}</div>
                     <div class="line-rom">${escapeHtml(line.text_rom)}</div>
-                    <div class="line-zh pending">翻譯中…</div>
+                    <div class="line-zh${line.text_zh ? '' : ' pending'}">${line.text_zh ? escapeHtml(line.text_zh) : '翻譯中…'}</div>
                 </div>
                 <button class="btn-play-sentence" onclick="playSentenceOnce(event, ${i})">
                     <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                 </button>
             `;
+            // 背歌詞模式下，點文字是「偷看」這一句，不是跳轉
+            row.querySelector('.lyric-content').onclick = (e) => {
+                if (!Object.values(prefs.hide).some(Boolean)) return;
+                e.stopPropagation();
+                row.classList.toggle('peek');
+            };
             container.appendChild(row);
         });
         document.querySelector('.main-content').scrollTop = 0;
     }
 
+    function highlight(idx) {
+        currentIdx = idx;
+        document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
+        const el = document.getElementById(`line-${idx}`);
+        if (el) {
+            el.classList.add('active');
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    function playSentence(index) {
+        if (!playerReady || index < 0 || index >= lyricsData.length) return;
+        lockedIndex = index;
+        repeatLeft = prefs.repeat === 0 ? Infinity : prefs.repeat - 1;
+        sentenceStopAt = lyricsData[index].end;
+        highlight(index);
+        seek(lyricsData[index].start);
+        player.playVideo();
+    }
+
     function playSentenceOnce(e, index) {
         e.stopPropagation();
-        lockedIndex = index;
-        sentenceStopAt = lyricsData[index].end;
-        player.seekTo(lyricsData[index].start);
+        playSentence(index);
+    }
+
+    function jumpLine(delta) {
+        const idx = Math.min(Math.max(currentIdx + delta, 0), lyricsData.length - 1);
+        lockedIndex = -1;
+        sentenceStopAt = null;
+        highlight(idx);
+        seek(lyricsData[idx].start);
         player.playVideo();
     }
 
     function startSync() {
         setInterval(() => {
-            if (!player || !player.getCurrentTime || lyricsData.length === 0) return;
-            const now = player.getCurrentTime();
-            if (sentenceStopAt && now >= sentenceStopAt) { player.pauseVideo(); sentenceStopAt = null; }
-            let activeIdx = lockedIndex !== -1 ? lockedIndex : -1;
+            if (!playerReady || !player.getCurrentTime || lyricsData.length === 0) return;
+            if (performance.now() < seekGuardUntil) return;
+            const now = player.getCurrentTime() - timeOffset;
+            if (sentenceStopAt !== null && now >= sentenceStopAt) {
+                if (repeatLeft > 0) { repeatLeft--; seek(lyricsData[lockedIndex].start); return; }
+                player.pauseVideo();
+                sentenceStopAt = null;
+            } else if (sentenceStopAt === null && loopA >= 0 && loopB >= 0) {
+                // 只在剛唱完 B 句時跳回 A；自己跳到別處就不會被拉回來
+                const loopEnd = lyricsData[loopB].end;
+                if (now >= loopEnd && now < loopEnd + 1.5) { seek(lyricsData[loopA].start); return; }
+            }
+            let activeIdx = lockedIndex;
             if (activeIdx === -1) {
-                for (let i = 0; i < lyricsData.length; i++) {
-                    if (now >= lyricsData[i].start && now < lyricsData[i].end + 0.1) { activeIdx = i; break; }
-                }
+                activeIdx = lyricsData.findIndex(l => now >= l.start && now < l.end + 0.1);
             }
-            if (activeIdx !== -1) {
-                const el = document.getElementById(`line-${activeIdx}`);
-                if (el && !el.classList.contains('active')) {
-                    document.querySelectorAll('.lyric-row.active').forEach(r => r.classList.remove('active'));
-                    el.classList.add('active');
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }
-        }, 200);
+            if (activeIdx !== -1 && activeIdx !== currentIdx) highlight(activeIdx);
+        }, 100);
+    }
+
+    // ===== 練習工具列 =====
+    function savePrefs() { store.set(PREFS_KEY, prefs); }
+
+    function setRate(rate) {
+        prefs.rate = rate;
+        savePrefs();
+        if (playerReady) player.setPlaybackRate(rate);
+        document.querySelectorAll('[data-rate]').forEach(b => b.classList.toggle('on', parseFloat(b.dataset.rate) === rate));
+    }
+
+    function toggleHide(field) {
+        prefs.hide[field] = !prefs.hide[field];
+        savePrefs();
+        applyHide();
+    }
+
+    function applyHide() {
+        const list = document.getElementById('lyrics-list');
+        Object.entries(prefs.hide).forEach(([field, on]) => {
+            list.classList.toggle(`hide-${field}`, on);
+            document.querySelector(`[data-hide="${field}"]`).classList.toggle('on', on);
+        });
+        document.querySelectorAll('.lyric-row.peek').forEach(r => r.classList.remove('peek'));
+    }
+
+    function adjustOffset(delta) {
+        if (!lesson) return;
+        timeOffset = Math.round((timeOffset + delta) * 10) / 10;
+        updateOffsetUi();
+        updateShareUrl();
+        saveLesson();
+    }
+
+    function updateOffsetUi() {
+        const sign = timeOffset > 0 ? '+' : timeOffset < 0 ? '−' : '±';
+        document.getElementById('offset-label').textContent = `${sign}${Math.abs(timeOffset).toFixed(1)}s`;
+    }
+
+    function setLoopPoint(which) {
+        if (!lyricsData.length) return;
+        const idx = Math.max(currentIdx, 0);
+        if (which === 'A') loopA = idx; else loopB = idx;
+        if (loopA >= 0 && loopB >= 0 && loopB < loopA) [loopA, loopB] = [loopB, loopA];
+        updateLoopUi();
+    }
+
+    function clearLoop() {
+        loopA = loopB = -1;
+        updateLoopUi();
+    }
+
+    function updateLoopUi() {
+        const both = loopA >= 0 && loopB >= 0;
+        document.getElementById('loop-label').textContent = both ? `第 ${loopA + 1} → ${loopB + 1} 句`
+            : loopA >= 0 ? `A：第 ${loopA + 1} 句` : loopB >= 0 ? `B：第 ${loopB + 1} 句` : '未設定';
+        document.querySelectorAll('.lyric-row').forEach((row, i) => row.classList.toggle('in-loop', both && i >= loopA && i <= loopB));
+    }
+
+    function initToolbar() {
+        document.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => setRate(parseFloat(b.dataset.rate)));
+        document.querySelectorAll('[data-hide]').forEach(b => b.onclick = () => toggleHide(b.dataset.hide));
+        const repeat = document.getElementById('repeat-select');
+        repeat.value = String(prefs.repeat);
+        repeat.onchange = () => { prefs.repeat = parseInt(repeat.value, 10); savePrefs(); };
+        setRate(prefs.rate);
+        applyHide();
+    }
+
+    // ===== 鍵盤快捷鍵 =====
+    function onKeyDown(e) {
+        if (e.key === 'Escape') {
+            const openModal = [...document.querySelectorAll('.modal-overlay')].find(m => m.style.display === 'flex');
+            return openModal ? toggleModal(openModal.id, false) : clearLoop();
+        }
+        if (e.target.closest('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (!playerReady || !lyricsData.length) return;
+        const actions = {
+            ' ': () => player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(),
+            ArrowLeft: () => jumpLine(-1),
+            ArrowRight: () => jumpLine(1),
+            r: () => playSentence(Math.max(currentIdx, 0)),
+            a: () => setLoopPoint('A'),
+            b: () => setLoopPoint('B')
+        };
+        const action = actions[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+        if (action) { e.preventDefault(); action(); }
     }
 
     function openDeconstructor(e, char) {
@@ -592,6 +1005,11 @@
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
     function speak(t) { const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; window.speechSynthesis.speak(u); }
+
+    document.addEventListener('keydown', onKeyDown);
+    initToolbar();
+    renderHistory();
+    initFromUrl();
 
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
