@@ -56,6 +56,7 @@
         }
         textarea { height: 150px; resize: none; font-family: monospace; border: 1px dashed #444; }
         textarea:focus, input:focus { border-color: var(--primary); outline: none; }
+        input:disabled { opacity: 0.5; }
 
         .btn-load {
             background: var(--primary); color: white; border: none;
@@ -367,6 +368,7 @@
     let loopB = -1;
     let timeOffset = 0;         // 正數 = 歌詞延後出現
     let lessonToken = 0;
+    let apiAvailable = null;    // GitHub Pages 等純靜態網站沒有 /api
 
     const STATUS_LABELS = {
         manual: '韓文字幕 ✓',
@@ -391,14 +393,20 @@
                     if (pendingVideoId) { player.loadVideoById(pendingVideoId); pendingVideoId = null; }
                 },
                 'onStateChange': (e) => {
+                    // 手動貼上時沒有標題，從播放器補上歌名與頻道（也會寫進分享連結）
+                    if (lesson && !lesson.meta.title && player.getVideoData) {
+                        const data = player.getVideoData() || {};
+                        if (data.title && (!data.video_id || data.video_id === lesson.transcript.videoId)) {
+                            lesson.meta.title = data.title;
+                            lesson.meta.channel = lesson.meta.channel || data.author || '';
+                            renderLessonInfo();
+                            saveLesson();
+                            updateShareUrl();
+                        }
+                    }
                     if (e.data !== 1) return; // 1 = 播放中
                     if (sentenceStopAt === null) lockedIndex = -1;
                     if (player.getPlaybackRate && player.getPlaybackRate() !== prefs.rate) player.setPlaybackRate(prefs.rate);
-                    // 貼網址載入時沒有標題，播放後從播放器補上
-                    if (lesson && !lesson.meta.title && player.getVideoData) {
-                        const title = player.getVideoData().title;
-                        if (title) { lesson.meta.title = title; renderLessonInfo(); saveLesson(); }
-                    }
                 }
             }
         });
@@ -468,9 +476,9 @@
             }
         } catch (err) {
             console.error(err);
-            setStatus(`無法連線到字幕服務：${err.message}。若是直接開啟 HTML 檔，請改用 python server.py 啟動。`, 'error');
+            setStatus(`無法連線到字幕服務：${err.message}。可以改用下方「手動模式」貼上轉錄稿。`, 'error');
         } finally {
-            btn.disabled = false;
+            btn.disabled = apiAvailable === false;
         }
     }
 
@@ -710,25 +718,114 @@
         });
     }
 
-    // ===== 分享連結：?v=影片ID（LRCLIB 歌詞加 &lrc=，有微調加 &offset=），也支援 ?q=歌名 =====
-    function updateShareUrl() {
-        const t = lesson.transcript;
-        const params = new URLSearchParams({ v: t.videoId });
-        if (t.source === 'lrclib' && t.lrclibId) params.set('lrc', t.lrclibId);
-        if (timeOffset) params.set('offset', timeOffset);
-        try { window.history.replaceState(null, '', `${location.pathname}?${params}`); } catch {}
+    // ===== 分享連結：整首歌（影片、時間軸、歌詞、官方中文）壓縮後放在網址 #s= 後面 =====
+    // 不需要伺服器或資料庫，GitHub Pages 也能用；任何人打開連結就能直接練習
+    function bytesToBase64Url(bytes) {
+        let s = '';
+        for (const b of bytes) s += String.fromCharCode(b);
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
-    async function shareLesson() {
+    function base64UrlToBytes(str) {
+        const s = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+        return Uint8Array.from(s, c => c.charCodeAt(0));
+    }
+
+    async function pipeBytes(bytes, transform) {
+        return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(transform)).arrayBuffer());
+    }
+
+    async function encodeLesson() {
+        const t = lesson.transcript;
+        const round = n => Math.round((n || 0) * 100) / 100;
+        const payload = {
+            v: t.videoId, t: lesson.meta.title || t.song || '', c: lesson.meta.channel || '',
+            s: t.source || 'manual', g: t.isGenerated ? 1 : 0, o: timeOffset,
+            l: t.lines.map(l => l.zh ? [round(l.start), round(l.duration), l.text, l.zh] : [round(l.start), round(l.duration), l.text])
+        };
+        const bytes = new TextEncoder().encode(JSON.stringify(payload));
+        if (typeof CompressionStream === 'undefined') return 'u' + bytesToBase64Url(bytes);
+        return 'z' + bytesToBase64Url(await pipeBytes(bytes, new CompressionStream('deflate-raw')));
+    }
+
+    async function decodeLesson(str) {
+        if (str[0] !== 'z' && str[0] !== 'u') throw new Error('unknown format');
+        let bytes = base64UrlToBytes(str.slice(1));
+        if (str[0] === 'z') bytes = await pipeBytes(bytes, new DecompressionStream('deflate-raw'));
+        const p = JSON.parse(new TextDecoder().decode(bytes));
+        if (!/^[\w-]{11}$/.test(p.v) || !Array.isArray(p.l) || !p.l.length) throw new Error('bad payload');
+        const lines = p.l.map(([start, duration, text, zh]) => ({ start: +start, duration: +duration, text: String(text), ...(zh ? { zh: String(zh) } : {}) }));
+        const zhCount = lines.filter(l => l.zh).length;
+        return {
+            transcript: {
+                videoId: p.v,
+                source: ['youtube', 'lrclib', 'manual'].includes(p.s) ? p.s : 'manual',
+                isGenerated: !!p.g,
+                lines,
+                ...(zhCount ? { translation: { coverage: zhCount / lines.length } } : {})
+            },
+            meta: { title: String(p.t || ''), channel: String(p.c || '') },
+            offset: +p.o || 0
+        };
+    }
+
+    async function updateShareUrl() {
+        if (!lesson) return;
+        const current = lesson;
+        let encoded = '';
+        try { encoded = await encodeLesson(); } catch (err) { console.error(err); }
+        if (current !== lesson) return; // 壓縮完成前已經換歌了
+        const hash = encoded ? `#s=${encoded}` : '';
+        try { window.history.replaceState(null, '', `${location.pathname}?v=${current.transcript.videoId}${hash}`); } catch {}
+    }
+
+    // 網址在每次換歌、微調後都已更新，這裡直接用（剪貼簿和分享面板都必須在點擊當下呼叫）
+    function shareLesson() {
+        const url = location.href;
+        if (navigator.share && isMobile()) {
+            navigator.share({ title: (lesson && lesson.meta.title) || 'HANGUL MASTER', url }).catch(() => {});
+            return;
+        }
+        const fallback = () => prompt('複製這個連結：', url);
         try {
-            await navigator.clipboard.writeText(location.href);
-            setStatus('已複製這首歌的連結，可以分享或加入書籤。', 'ok');
+            navigator.clipboard.writeText(url)
+                .then(() => setStatus('已複製這首歌的連結（歌詞都在連結裡），可以傳到手機或分享給朋友。', 'ok'))
+                .catch(fallback);
         } catch {
-            prompt('複製這個連結：', location.href);
+            fallback(); // http 網址沒有 navigator.clipboard
+        }
+    }
+
+    // GitHub Pages 等純靜態網站沒有 /api：停用搜尋框，改引導使用手動模式
+    async function checkApi() {
+        try {
+            apiAvailable = !!(await (await fetch(SUBTITLE_API_URL)).json()).code;
+        } catch {
+            apiAvailable = false;
+        }
+        if (apiAvailable) return;
+        const input = document.getElementById('search-input');
+        input.disabled = true;
+        input.placeholder = '這個網站沒有自動搜尋，請用下方手動模式';
+        document.getElementById('search-btn').disabled = true;
+        document.querySelector('.manual-mode').open = true;
+        if (!lesson) {
+            setStatus('這個網址沒有字幕搜尋服務（例如 GitHub Pages）。請在下方手動模式貼上 YouTube 網址與韓文轉錄稿，載入後按「🔗 分享」，就能把整首歌的連結傳到手機或分享給朋友。');
         }
     }
 
     async function initFromUrl() {
+        if (location.hash.startsWith('#s=')) {
+            try {
+                const { transcript, meta, offset } = await decodeLesson(location.hash.slice(3));
+                startLesson(transcript, meta, { offset });
+                setStatus('已從連結載入整首歌，可以直接開始練習。', 'ok');
+            } catch (err) {
+                console.error(err);
+                setStatus('連結裡的歌詞資料不完整，可能是複製時被截斷了。', 'error');
+            }
+            return;
+        }
         const params = new URLSearchParams(location.search);
         const videoId = params.get('v');
         const lrc = params.get('lrc');
@@ -761,23 +858,21 @@
     }
 
     // ===== 手動模式 =====
-    // 解析轉錄稿
+    // 解析轉錄稿：YouTube 轉錄稿（時間與歌詞分兩行或同一行）、LRC 格式 [00:17.10] 歌詞
     function parseTranscript(text) {
+        const TIME = /^\[?((?:\d{1,2}:)?\d{1,2}:\d{2}(?:\.\d+)?)\]?\s*(.*)$/;
         const lines = text.split('\n').map(l => l.trim()).filter(l => l !== "");
         const parsed = [];
         for (let i = 0; i < lines.length; i++) {
-            const timeMatch = lines[i].match(/^(\d{1,2}:)?\d{1,2}:\d{2}$/);
-            if (timeMatch) {
-                const parts = timeMatch[0].split(':').map(parseFloat);
-                let seconds = parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
-                const content = lines[i+1] || "";
-                if (content && !content.match(/^(\d{1,2}:)?\d{1,2}:\d{2}$/)) {
-                    parsed.push({ start: seconds, text: content });
-                    i++;
-                }
-            }
+            const m = lines[i].match(TIME);
+            if (!m) continue;
+            const seconds = m[1].split(':').reduce((total, part) => total * 60 + parseFloat(part), 0);
+            let content = m[2].trim();
+            if (!content && lines[i + 1] && !TIME.test(lines[i + 1])) content = lines[++i];
+            content = content.replace(/^[♪\s]+|[♪\s]+$/g, '');
+            if (content && !/^\[[^\]]*\]$/.test(content)) parsed.push({ start: seconds, text: content }); // 略過 [음악] 之類
         }
-        return parsed;
+        return parsed.sort((a, b) => a.start - b.start);
     }
 
     function loadEverything() {
@@ -1007,8 +1102,10 @@
     function speak(t) { const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; window.speechSynthesis.speak(u); }
 
     document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('hashchange', initFromUrl); // 同一個分頁再打開另一首歌的連結
     initToolbar();
     renderHistory();
+    checkApi();
     initFromUrl();
 
     var tag = document.createElement('script');
